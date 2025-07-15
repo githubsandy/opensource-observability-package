@@ -1,0 +1,15 @@
+---
+- hosts: local
+  become: yes
+  tasks:
+    - name: Install Prometheus
+      import_playbook: prometheus.yml
+
+    - name: Install Node Exporter
+      import_playbook: node_exporter.yml
+
+    - name: Install Loki
+      import_playbook: loki.yml
+
+    - name: Install Grafana
+      import_playbook: grafana.yml

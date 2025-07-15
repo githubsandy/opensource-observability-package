@@ -1,0 +1,30 @@
+---
+- hosts: local
+  become: yes
+  tasks:
+    - name: Check if Node Exporter is already installed
+      command: node_exporter --version
+      register: node_exporter_check
+      ignore_errors: yes
+
+    - name: Download Node Exporter
+      get_url:
+        url: https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz
+        dest: /tmp/node_exporter.tar.gz
+      when: node_exporter_check.rc != 0
+
+    - name: Extract Node Exporter
+      unarchive:
+        src: /tmp/node_exporter.tar.gz
+        dest: /opt/
+        remote_src: yes
+      when: node_exporter_check.rc != 0
+
+    - name: Symlink Node Exporter binary
+      file:
+        src: /opt/node_exporter-1.8.1.linux-amd64/node_exporter
+        dest: /usr/local/bin/node_exporter
+        state: link
+      when: node_exporter_check.rc != 0
+
+    # Add config and systemd service tasks as needed
