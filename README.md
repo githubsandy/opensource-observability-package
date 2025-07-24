@@ -1,97 +1,193 @@
-# Open Source Observability Package
+# Fullstack Observability Stack
 
-This repository provides an open-source observability package solution that allows users to easily install and configure essential monitoring and logging tools using Ansible automation.
+This repository provides a step-by-step guide to set up an observability stack using Kubernetes and Helm. The stack includes Prometheus, Grafana, Loki, Promtail, Node Exporter, and Blackbox Exporter.
 
-## Features
-
-- One-click installation script to set up the observability stack.
-- Automated installation of Prometheus, Node Exporter, Loki, and Grafana.
-- Checks for prerequisites and installs them if missing.
+---
 
 ## Prerequisites
 
-Before running the installation script, ensure that you have the following installed on your system:
+Before starting, ensure the following tools are installed and configured:
 
-- Linux or MacOS
-- Python 3
-- (On Mac) Homebrew
-- sudo privileges for package installation
-
-## Installation
-
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/yourusername/opensource-observability-package.git
-   cd opensource-observability-package
-   ```
-
-2. Run the installation script:
-
-   ```bash
-   bash scripts/run_installer.sh
-   ```
-
-This script will check for Ansible, install it if necessary, and then execute the main Ansible playbook to install the observability tools in the specified order.
-
-## Usage
-
-After the installation is complete, you can access the following tools:
-
-- **Prometheus**: Access it at `http://<your-server-ip>:9090`
-- **Grafana**: Access it at `http://<your-server-ip>:3000` (default credentials: admin/admin)
-
-## What Gets Installed
-
-- **Prometheus**: Metrics collection
-- **Node Exporter**: Host metrics
-- **Loki**: Log aggregation
-- **Grafana**: Visualization
-
-## Customization
-
-Edit the playbooks in `ansible/playbooks/` to customize versions or configuration.
-
-## Troubleshooting
-
-- Ensure you have sudo privileges.
-- For Mac, Homebrew is required for Ansible install.
+1. **kubectl**: Kubernetes command-line tool.  
+   [Installation guide](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+2. **Helm**: Kubernetes package manager.  
+   [Installation guide](https://helm.sh/docs/intro/install/)
+3. **Minikube** (optional): Local Kubernetes cluster for testing.  
+   [Installation guide](https://minikube.sigs.k8s.io/docs/start/)
 
 ---
 
-## How it Works
+## Directory Structure
 
-- The installer script checks for Ansible and installs it if missing.
-- The main playbook (`install_stack.yml`) runs each tool’s playbook in order.
-- Each playbook checks if the tool is already installed and skips installation if so.
+```
+helm-kube-observability-stack/
+├── charts/
+├── templates/
+│   ├── grafana-deployment.yaml
+│   ├── grafana-service.yaml
+│   ├── loki-deployment.yaml
+│   ├── loki-service.yaml
+│   ├── node-exporter-daemonset.yaml
+│   ├── node-exporter-service.yaml
+│   ├── prometheus-deployment.yaml
+│   ├── prometheus-service.yaml
+│   ├── prometheus-config.yaml
+│   ├── promtail-deployment.yaml
+│   ├── promtail-service.yaml
+│   ├── promtail-config.yaml
+│   ├── blackbox-exporter-deployment.yaml
+│   ├── blackbox-exporter-service.yaml
+│   ├── blackbox-exporter-config.yaml
+│   ├── namespace.yaml
+│   ├── ingress.yaml
+│   ├── NOTES.txt
+├── values.yaml
+├── Chart.yaml
+```
+
+---
+
+## Installation Steps
+
+### Step 1: Create Namespace
+Apply the namespace file:
+```bash
+kubectl apply -f templates/namespace.yaml
+```
+
+### Step 2: Deploy the Helm Chart
+Install the Helm chart:
+```bash
+helm install observability-stack helm-kube-observability-stack --namespace kube-observability-stack
+```
+
+Upgrade the Helm chart after modifications:
+```bash
+helm upgrade observability-stack helm-kube-observability-stack --namespace kube-observability-stack
+```
+
+### Step 3: Verify Deployments and Services
+Check the status of deployments:
+```bash
+kubectl get deployments -n kube-observability-stack
+```
+
+Check the status of services:
+```bash
+kubectl get services -n kube-observability-stack
+```
+
+### Step 4: Access Applications via Port Forwarding
+#### Grafana
+```bash
+kubectl port-forward svc/grafana 3000:3000 -n kube-observability-stack
+```
+Access Grafana at `http://localhost:3000`.
+
+#### Prometheus
+```bash
+kubectl port-forward svc/prometheus 9090:9090 -n kube-observability-stack
+```
+Access Prometheus at `http://localhost:9090`.
+
+#### Loki
+```bash
+kubectl port-forward svc/loki 3100:3100 -n kube-observability-stack
+```
+Access Loki at `http://localhost:3100`.
+
+#### Blackbox Exporter
+```bash
+kubectl port-forward svc/blackbox-exporter 9115:9115 -n kube-observability-stack
+```
+Access Blackbox Exporter at `http://localhost:9115`.
 
 ---
 
-## What You Might Still Want to Consider
+## Permanent Access Solutions
 
-### 1. System Prerequisites
+### Ingress
+Use an Ingress resource for hostname-based routing:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: kube-observability-stack
+spec:
+  rules:
+  - host: grafana.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port:
+              number: 3000
+```
 
-- **Python 3**: Ansible requires Python 3 on the target machine (most modern systems have it).
-- **Sudo privileges**: The script assumes the user can run `sudo` commands.
-- **Network access**: The script downloads binaries from the internet.
-
-### 2. Service Management
-
-- The playbooks do not yet create or enable systemd service files for Prometheus, Node Exporter, or Loki. Without this, you’ll need to run the binaries manually after install.
-- **Grafana** (when installed via apt) is set up as a service automatically.
-
-### 3. Configuration Files
-
-- The playbooks install binaries, but do not provide default configuration files for Prometheus, Loki, etc.  
-  (You may want to add this for a true “ready-to-use” experience.)
-
-### 4. Cross-Platform Support
-
-- The current playbooks are written for Debian/Ubuntu.  
-  For RedHat/CentOS or other OSes, you’d need to add tasks for those platforms.
-
-### 5. User Experience
-
-- For a true “one-click” experience, you could provide a `.desktop` launcher for Linux GUIs, or a double-clickable `.command` file for Mac, but most users will be fine running a shell script.
+### LoadBalancer
+Expose services using a LoadBalancer:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: kube-observability-stack
+spec:
+  selector:
+    app: grafana
+  ports:
+  - name: http
+    port: 3000
+    targetPort: 3000
+  type: LoadBalancer
+```
 
 ---
+
+## Ports and Access
+
+| Application   | Port  | Access Method           |
+|---------------|-------|-------------------------|
+| Grafana       | 3000  | Port-forward or NodePort|
+| Prometheus    | 9090  | Port-forward            |
+| Loki          | 3100  | Port-forward            |
+| Node Exporter | 9100  | Internal ClusterIP      |
+| Promtail      | 9080  | Internal ClusterIP      |
+| Blackbox      | 9115  | Internal ClusterIP      |
+
+---
+
+## Why Helm Chart?
+
+1. **Modularity**: Easy to update individual components.
+2. **Reusability**: Can be reused across environments.
+3. **Scalability**: Simplifies scaling and upgrading applications.
+4. **Declarative Approach**: YAML-based configuration for easier management.
+
+---
+
+## Commands Summary
+
+### Install Helm Chart
+```bash
+helm install observability-stack helm-kube-observability-stack --namespace kube-observability-stack
+```
+
+### Upgrade Helm Chart
+```bash
+helm upgrade observability-stack helm-kube-observability-stack --namespace kube-observability-stack
+```
+
+### Check Deployments
+```bash
+kubectl get deployments -n kube-observability-stack
+```
+
+### Check Services
+```bash
+kubectl get services -n kube-observability-stack
+```
