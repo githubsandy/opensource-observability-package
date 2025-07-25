@@ -56,14 +56,16 @@ kubectl apply -f templates/namespace.yaml
 ```
 
 ### Step 2: Deploy the Helm Chart
-Install the Helm chart:
+Install the Helm chart using the command below. The `--create-namespace` flag will automatically create the `kube-observability-stack` namespace for you if it doesn't exist.
+
 ```bash
-helm install observability-stack helm-kube-observability-stack --namespace kube-observability-stack
+helm install observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack --create-namespace
 ```
 
-Upgrade the Helm chart after modifications:
+If you need to upgrade the chart after making changes, use this command:
+
 ```bash
-helm upgrade observability-stack helm-kube-observability-stack --namespace kube-observability-stack
+helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
 ```
 
 ### Step 3: Verify Deployments and Services
@@ -101,6 +103,37 @@ Access Loki at `http://localhost:3100`.
 kubectl port-forward svc/blackbox-exporter 9115:9115 -n kube-observability-stack
 ```
 Access Blackbox Exporter at `http://localhost:9115`.
+
+---
+## Adding Data Sources in Grafana
+
+### Prometheus
+1. **Access Grafana**:
+   Run the following command to port-forward Grafana:
+   ```bash
+   kubectl port-forward svc/grafana 3000:3000 -n kube-observability-stack
+   ```
+   Open your browser and navigate to `http://localhost:3000`.
+
+2. **Login to Grafana**:
+   Use the default credentials:
+   - Username: `admin`
+   - Password: `admin` (or the value set in `values.yaml` under `grafana.adminPassword`).
+
+3. **Add Prometheus Data Source**:
+   - Go to **Configuration** > **Data Sources** > **Add Data Source**.
+   - Select **Prometheus**.
+   - Set the URL to `http://prometheus:9090` (internal service name and port for Prometheus in Kubernetes).
+   - Click **Save & Test**.
+
+---
+
+### Loki
+1. **Add Loki Data Source**:
+   - Go to **Configuration** > **Data Sources** > **Add Data Source**.
+   - Select **Loki**.
+   - Set the URL to `http://loki:3100` (internal service name and port for Loki in Kubernetes).
+   - Click **Save & Test**.
 
 ---
 

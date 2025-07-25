@@ -1,4 +1,4 @@
-// filepath: /Users/skumark5/Documents/opensource-observability-package/Kubernetes Approach/helm-kube-observability-stack/templates/promtail-deployment.yaml
+#// filepath: /Users/skumark5/Documents/opensource-observability-package/Kubernetes Approach/helm-kube-observability-stack/templates/promtail-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
