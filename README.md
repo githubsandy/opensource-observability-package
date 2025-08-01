@@ -104,7 +104,24 @@ kubectl port-forward svc/blackbox-exporter 9115:9115 -n kube-observability-stack
 ```
 Access Blackbox Exporter at `http://localhost:9115`.
 
+#### Promtail (If Needed)
+```bash
+kubectl port-forward -n kube-observability-stack svc/promtail 9080:9080
+```
+Access Blackbox Exporter at `http://localhost:9115`.
 ---
+
+### Step : Access the Services
+Once the ports are forwarded, you can access the services locally using the following URLs:
+
+```bash
+Prometheus: http://localhost:9090
+Grafana: http://localhost:3000
+Loki: http://localhost:3100
+Promtail: http://localhost:9080
+Blackbox Exporter: http://localhost:9115
+```
+
 ## Adding Data Sources in Grafana
 
 ### Prometheus
