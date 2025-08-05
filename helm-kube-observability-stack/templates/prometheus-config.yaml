@@ -63,7 +63,7 @@ data:
             regex: 'node-exporter'
             action: keep
 
-      # Application Layer Exporters (Week 3-4)
+      # Application Layer Exporters
       
       # Jenkins Exporter scrape job
       - job_name: 'jenkins-exporter'

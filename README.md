@@ -5,8 +5,8 @@ This repository provides a step-by-step guide to set up a comprehensive observab
 **Components Include:**
 - **🎯 Core Stack**: Prometheus, Grafana, Loki, Promtail
 - **🔧 Infrastructure Exporters**: Node Exporter, Blackbox Exporter  
-- **⚡ Foundation Exporters (Week 1-2)**: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
-- **🚀 Application Layer (Week 3-4)**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
+- **⚡ Foundation Exporters**: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
+- **🚀 Application Layer**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
 
 **Complete 12-Service Observability Platform** for modern test automation and Kubernetes monitoring.
 
@@ -54,12 +54,12 @@ chmod +x check-services.sh
 - **Node Exporter**: http://localhost:9100
 - **Promtail**: http://localhost:9080
 
-**⚡ Foundation Exporters (Week 1-2):**
+**⚡ Foundation Exporters:**
 - **kube-state-metrics**: http://localhost:8080
 - **MongoDB Exporter**: http://localhost:9216
 - **PostgreSQL Exporter**: http://localhost:9187
 
-**🚀 Application Layer (Week 3-4):**
+**🚀 Application Layer:**
 - **Jenkins Exporter**: http://localhost:9118
 - **Redis Exporter**: http://localhost:9121
 - **FastAPI Metrics**: http://localhost:8001
@@ -91,7 +91,7 @@ opensource-observability-package/
 │   │   ├── blackbox-exporter-deployment.yaml
 │   │   ├── blackbox-exporter-service.yaml
 │   │   ├── blackbox-exporter-config.yaml
-│   │   ├── # Foundation Exporters (Week 1-2)
+│   │   ├── # Foundation Exporters
 │   │   ├── kube-state-metrics-deployment.yaml
 │   │   ├── kube-state-metrics-service.yaml
 │   │   ├── kube-state-metrics-rbac.yaml
@@ -101,7 +101,7 @@ opensource-observability-package/
 │   │   ├── postgres-exporter-deployment.yaml
 │   │   ├── postgres-exporter-service.yaml
 │   │   ├── postgres-exporter-secret.yaml
-│   │   ├── # Application Layer (Week 3-4)
+│   │   ├── # Application Layer
 │   │   ├── jenkins-exporter-deployment.yaml
 │   │   ├── jenkins-exporter-service.yaml
 │   │   ├── jenkins-exporter-secret.yaml
@@ -227,7 +227,7 @@ kubectl port-forward svc/promtail 9080:9080 -n kube-observability-stack
 ```
 Access Promtail at `http://localhost:9080`.
 
-### Foundation Exporters (Week 1-2)
+### Foundation Exporters
 
 #### kube-state-metrics
 ```bash
@@ -247,7 +247,7 @@ kubectl port-forward svc/postgres-exporter 9187:9187 -n kube-observability-stack
 ```
 Access PostgreSQL Exporter at `http://localhost:9187`.
 
-### Application Layer (Week 3-4)
+### Application Layer
 
 #### Jenkins Exporter
 ```bash
@@ -285,14 +285,14 @@ Promtail: http://localhost:9080
 Blackbox Exporter: http://localhost:9115
 ```
 
-**⚡ Foundation Exporters (Week 1-2):**
+**⚡ Foundation Exporters:**
 ```bash
 kube-state-metrics: http://localhost:8080
 MongoDB Exporter: http://localhost:9216
 PostgreSQL Exporter: http://localhost:9187
 ```
 
-**🚀 Application Layer (Week 3-4):**
+**🚀 Application Layer:**
 ```bash
 Jenkins Exporter: http://localhost:9118
 Redis Exporter: http://localhost:9121
@@ -301,7 +301,7 @@ FastAPI Metrics: http://localhost:8001
 
 ---
 
-## Foundation Exporters Configuration (Week 1-2)
+## Foundation Exporters Configuration
 
 ### MongoDB Exporter Setup
 Before using the MongoDB Exporter, configure your database connection in `values.yaml`:
@@ -327,7 +327,7 @@ helm upgrade observability-stack ./helm-kube-observability-stack --namespace kub
 
 ---
 
-## Application Layer Configuration (Week 3-4)
+## Application Layer Configuration
 
 ### Jenkins Exporter Setup
 Before using the Jenkins Exporter, configure your Jenkins server connection in `values.yaml`:
@@ -428,7 +428,7 @@ mongodb_connections                      # MongoDB active connections
 postgres_connections                     # PostgreSQL connections
 ```
 
-### Application Layer (Week 3-4)
+### Application Layer
 
 #### CI/CD Pipeline Metrics (Jenkins)
 ```promql
@@ -475,12 +475,12 @@ The `check-services.sh` script now provides comprehensive status monitoring for 
 ✅ Node Exporter  : Running (http://localhost:9100)
 ✅ Promtail       : Running (http://localhost:9080)
 
-🔹 Foundation Exporters (Week 1-2):
+🔹 Foundation Exporters:
 ✅ kube-state-metrics: Running (http://localhost:8080)
 ✅ MongoDB Exporter  : Running (http://localhost:9216)
 ✅ PostgreSQL Exporter: Running (http://localhost:9187)
 
-🔹 Application Layer Exporters (Week 3-4):
+🔹 Application Layer Exporters:
 ✅ Jenkins Exporter  : Running (http://localhost:9118)
 ✅ Redis Exporter    : Running (http://localhost:9121)
 ✅ FastAPI Metrics   : Running (http://localhost:8001)
@@ -561,14 +561,14 @@ spec:
 | Promtail      | 9080  | Port-forward / Internal | Log Collection Agent |
 | Blackbox      | 9115  | Port-forward / Internal | External Endpoint Monitoring |
 
-### Foundation Exporters (Week 1-2)
+### Foundation Exporters
 | Application   | Port  | Access Method           | Description |
 |---------------|-------|-------------------------|-------------|
 | kube-state-metrics | 8080  | Port-forward / Internal | Kubernetes Cluster Health |
 | MongoDB Exporter   | 9216  | Port-forward / Internal | NoSQL Database Metrics |
 | PostgreSQL Exporter| 9187  | Port-forward / Internal | Relational Database Metrics |
 
-### Application Layer (Week 3-4)
+### Application Layer
 | Application   | Port  | Access Method           | Description |
 |---------------|-------|-------------------------|-------------|
 | Jenkins Exporter   | 9118  | Port-forward / Internal | CI/CD Pipeline Monitoring |

@@ -6,8 +6,8 @@ This document provides a step-by-step guide to set up a comprehensive observabil
 **Components Include:**
 - **Core Stack**: Prometheus, Grafana, Loki, Promtail
 - **Infrastructure Exporters**: Node Exporter, Blackbox Exporter  
-- **Foundation Exporters (Week 1-2)**: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
-- **Application Layer (Week 3-4)**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
+- **Foundation Exporters**: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
+- **Application Layer**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
 
 **Complete 12-Service Enterprise Observability Platform** for modern test automation and Kubernetes monitoring.
 
@@ -59,7 +59,7 @@ helm-kube-observability-stack/
 │   ├── postgres-exporter-deployment.yaml
 │   ├── postgres-exporter-service.yaml
 │   ├── postgres-exporter-secret.yaml
-│   ├── # Application Layer (Week 3-4)
+│   ├── # Application Layer
 │   ├── jenkins-exporter-deployment.yaml
 │   ├── jenkins-exporter-service.yaml
 │   ├── jenkins-exporter-secret.yaml
@@ -442,7 +442,7 @@ spec:
             memory: {{ .Values.postgresExporter.resources.requests.memory }}
 ```
 
-### **Application Layer Exporters (Week 3-4)**
+### **Application Layer Exporters**
 
 #### 10. **jenkins-exporter-deployment.yaml**:
    - Deploys Jenkins Exporter for CI/CD pipeline monitoring.
@@ -766,7 +766,7 @@ spec:
     app: postgres-exporter
 ```
 
-### **Application Layer Exporter Services (Week 3-4)**
+### **Application Layer Exporter Services**
 
 #### 10. **jenkins-exporter-service.yaml**:
    - Exposes Jenkins Exporter internally via `ClusterIP`.
@@ -949,7 +949,7 @@ data:
             regex: 'node-exporter'
             action: keep
 
-      # Application Layer Exporters (Week 3-4)
+      # Application Layer Exporters
       # Jenkins Exporter scrape job
       - job_name: 'jenkins-exporter'
         static_configs:
@@ -1090,7 +1090,7 @@ postgresExporter:
     type: ClusterIP
     port: 9187
 
-# Application Layer Exporters Configuration (Week 3-4)
+# Application Layer Exporters Configuration
 jenkinsExporter:
   image: lovoo/jenkins_exporter:latest
   replicas: 1
@@ -1378,13 +1378,13 @@ check_service "Node Exporter  " "http://localhost:9100"
 check_service "Promtail       " "http://localhost:9080"
 
 echo
-echo "🔹 Foundation Exporters (Week 1-2):"
+echo "🔹 Foundation Exporters:"
 check_service "kube-state-metrics" "http://localhost:8080"
 check_service "MongoDB Exporter  " "http://localhost:9216"
 check_service "PostgreSQL Exporter" "http://localhost:9187"
 
 echo
-echo "🔹 Application Layer Exporters (Week 3-4):"
+echo "🔹 Application Layer Exporters:"
 check_service "Jenkins Exporter  " "http://localhost:9118"
 check_service "Redis Exporter    " "http://localhost:9121"
 check_service "FastAPI Metrics   " "http://localhost:8001"
@@ -1611,7 +1611,7 @@ Access Grafana at http://<node-ip>:32000.
 
 
 
-### **Step 5: Configure Foundation Exporters (Week 1-2)**
+### **Step 5: Configure Foundation Exporters**
 
 Before using the MongoDB and PostgreSQL exporters, configure their database connections in `values.yaml`:
 
@@ -1633,7 +1633,7 @@ postgresExporter:
 helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
 ```
 
-### **Step 6: Configure Application Layer Exporters (Week 3-4)**
+### **Step 6: Configure Application Layer Exporters**
 
 Before using the Application Layer exporters, configure their connections in `values.yaml`:
 
@@ -1940,14 +1940,14 @@ kubectl get pods -n kube-observability-stack
 | Promtail      | 9080  | Port-forward / Internal | Log Collection Agent |
 | Blackbox      | 9115  | Port-forward / Internal | External Endpoint Monitoring |
 
-### **Foundation Exporters (Week 1-2)**
+### **Foundation Exporters**
 | Application   | Port  | Access Method           | Description |
 |---------------|-------|-------------------------|-------------|
 | kube-state-metrics | 8080  | Port-forward / Internal | Kubernetes Cluster Health |
 | MongoDB Exporter   | 9216  | Port-forward / Internal | NoSQL Database Metrics |
 | PostgreSQL Exporter| 9187  | Port-forward / Internal | Relational Database Metrics |
 
-### **Application Layer Exporters (Week 3-4)**
+### **Application Layer Exporters**
 | Application   | Port  | Access Method           | Description |
 |---------------|-------|-------------------------|-------------|
 | Jenkins Exporter   | 9118  | Port-forward / Internal | CI/CD Pipeline Monitoring |

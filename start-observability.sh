@@ -12,13 +12,13 @@ echo "   • Blackbox Exporter: http://localhost:9115"
 echo "   • Node Exporter: http://localhost:9100"
 echo "   • Promtail: http://localhost:9080"
 echo
-echo "⚡ Foundation Exporters (Week 1-2):"
+echo "⚡ Foundation Exporters:"
 echo "   • kube-state-metrics: http://localhost:8080"
 # Commented out - requires actual database configuration:
 # echo "   • MongoDB Exporter: http://localhost:9216"
 # echo "   • PostgreSQL Exporter: http://localhost:9187"
 echo
-echo "🚀 Application Layer Exporters (Week 3-4):"
+echo "🚀 Application Layer Exporters:"
 # Commented out - requires external service configuration:
 # echo "   • Jenkins Exporter: http://localhost:9118"
 # echo "   • Redis Exporter: http://localhost:9121"

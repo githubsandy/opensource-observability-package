@@ -29,14 +29,14 @@ check_service "Node Exporter  " "http://localhost:9100"
 check_service "Promtail       " "http://localhost:9080"
 
 echo
-echo "🔹 Foundation Exporters (Week 1-2):"
+echo "🔹 Foundation Exporters:"
 check_service "kube-state-metrics" "http://localhost:8080"
 # Commented out - requires actual database configuration:
 # check_service "MongoDB Exporter  " "http://localhost:9216"
 # check_service "PostgreSQL Exporter" "http://localhost:9187"
 
 echo
-echo "🔹 Application Layer Exporters (Week 3-4):"
+echo "🔹 Application Layer Exporters:"
 # Commented out - requires external service configuration:
 # check_service "Jenkins Exporter  " "http://localhost:9118"
 # check_service "Redis Exporter    " "http://localhost:9121"
