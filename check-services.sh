@@ -31,14 +31,16 @@ check_service "Promtail       " "http://localhost:9080"
 echo
 echo "🔹 Foundation Exporters (Week 1-2):"
 check_service "kube-state-metrics" "http://localhost:8080"
-check_service "MongoDB Exporter  " "http://localhost:9216"
-check_service "PostgreSQL Exporter" "http://localhost:9187"
+# Commented out - requires actual database configuration:
+# check_service "MongoDB Exporter  " "http://localhost:9216"
+# check_service "PostgreSQL Exporter" "http://localhost:9187"
 
 echo
 echo "🔹 Application Layer Exporters (Week 3-4):"
-check_service "Jenkins Exporter  " "http://localhost:9118"
-check_service "Redis Exporter    " "http://localhost:9121"
-check_service "FastAPI Metrics   " "http://localhost:8001"
+# Commented out - requires external service configuration:
+# check_service "Jenkins Exporter  " "http://localhost:9118"
+# check_service "Redis Exporter    " "http://localhost:9121"
+# check_service "FastAPI Metrics   " "http://localhost:8001"
 
 echo
 echo "📋 Default Credentials:"
@@ -53,7 +55,8 @@ echo "   • Blackbox Metrics: http://localhost:9115/metrics"
 echo "   • Kubernetes Metrics: http://localhost:8080/metrics"
 echo "   • Node Metrics: http://localhost:9100/metrics"
 echo "   • Promtail Metrics: http://localhost:9080/metrics"
-echo "   • Jenkins Metrics: http://localhost:9118/metrics"
-echo "   • Redis Metrics: http://localhost:9121/metrics"
-echo "   • FastAPI Metrics: http://localhost:8001/metrics"
-echo "   • FastAPI App: http://localhost:8000"
+# Commented out - requires external service configuration:
+# echo "   • Jenkins Metrics: http://localhost:9118/metrics"
+# echo "   • Redis Metrics: http://localhost:9121/metrics"
+# echo "   • FastAPI Metrics: http://localhost:8001/metrics"
+# echo "   • FastAPI App: http://localhost:8000"

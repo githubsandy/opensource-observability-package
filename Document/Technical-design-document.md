@@ -1672,50 +1672,239 @@ fastApiMetrics:
 helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
 ```
 
-### **Step 7: Query Data in Grafana**
+### **Step 7: Configure Data Sources in Grafana UI**
 
-#### **Logs (Loki)**
-1. Add Loki as a data source in Grafana.
-2. Use queries like:
-   - `{job="varlogs"}` - All container logs
-   - `{job="varlogs"} |= "error"` - Error logs only
-   - `{namespace="kube-observability-stack"}` - Logs from observability namespace
+After starting port forwarding, you need to configure data sources in Grafana to start visualizing metrics and logs. This section provides detailed UI instructions for adding the essential data sources.
 
-#### **Metrics (Prometheus)**  
-1. Add Prometheus as a data source in Grafana.
-2. **Core Infrastructure Queries**:
-   - `up` - Service availability
-   - `probe_success{job="blackbox"}` - External endpoint health
-   - `kube_pod_status_phase` - Pod status across cluster
-   - `mongodb_up` - MongoDB connection status
-   - `pg_up` - PostgreSQL connection status
+#### **7.1: Access Grafana Dashboard**
 
-3. **Kubernetes Health Queries**:
-   - `kube_deployment_status_replicas` - Deployment replica status
-   - `kube_node_status_condition` - Node health status
-   - `kube_pod_container_status_restarts_total` - Container restart rates
+1. **Start Port Forwarding** (if not already running):
+   ```bash
+   ./start-observability.sh
+   ```
 
-4. **Application Layer Queries (Week 3-4)**:
-   **CI/CD Pipeline Metrics (Jenkins)**:
-   - `jenkins_job_success_percentage` - Build success rates
-   - `jenkins_queue_size` - Build queue backlogs
-   - `jenkins_job_duration_milliseconds` - Pipeline execution times
-   - `jenkins_builds_duration_milliseconds_summary` - Build duration summary
+2. **Access Grafana UI**:
+   - Open your web browser
+   - Navigate to: `http://localhost:3000`
+   - **Login Credentials**:
+     - **Username**: `admin`
+     - **Password**: `admin` (default, configurable in values.yaml)
 
-   **Cache & Session Metrics (Redis)**:
-   - `redis_connected_clients` - Active Redis connections
-   - `redis_memory_used_bytes` - Memory usage
-   - `redis_commands_processed_total` - Commands processed per second
-   - `redis_up` - Redis connection status
+3. **First Login**:
+   - Grafana may prompt you to change the default password
+   - You can skip this step for development/testing environments
 
-   **Test Automation Metrics (FastAPI)**:
-   - `test_executions_total{framework="cxtaf"}` - CXTAF test executions
-   - `test_executions_total{framework="cxtm"}` - CXTM test executions
-   - `cxtaf_device_connections_active` - Active device connections
-   - `cxtm_workflows_active` - Active test workflows
-   - `active_test_sessions_total` - Concurrent test capacity
-   - `fastapi_request_duration_seconds` - API response times
-   - `test_execution_duration_seconds` - Test execution duration
+#### **7.2: Add Prometheus Data Source (Metrics)**
+
+Prometheus is the primary metrics collection system that scrapes data from all exporters.
+
+**Step-by-Step Instructions:**
+
+1. **Navigate to Data Sources**:
+   - Click on **⚙️ Configuration** (gear icon) in the left sidebar
+   - Select **Data Sources**
+   - Click **Add data source**
+
+2. **Select Prometheus**:
+   - Choose **Prometheus** from the list of available data sources
+
+3. **Configure Prometheus Connection**:
+   ```yaml
+   Name: Prometheus
+   URL: http://prometheus:9090
+   Access: Server (default)
+   ```
+   
+   **Important Notes**:
+   - Use `http://prometheus:9090` (internal Kubernetes service name)
+   - **NOT** `http://localhost:9090` (this is for external access only)
+   - The URL uses the internal cluster DNS for service-to-service communication
+
+4. **Test Connection**:
+   - Scroll down and click **Save & Test**
+   - You should see: ✅ **"Data source is working"**
+
+5. **Verify Metrics Availability**:
+   - Navigate to **Explore** (compass icon in left sidebar)
+   - Select **Prometheus** from the dropdown
+   - Try a simple query: `up`
+   - You should see metrics from all active services
+
+**What Prometheus Includes:**
+- ✅ **Core Services**: Grafana, Prometheus, Loki metrics
+- ✅ **Infrastructure Exporters**: Node Exporter, Blackbox Exporter, Promtail  
+- ✅ **Foundation Exporters**: kube-state-metrics (Kubernetes cluster health)
+- ❌ **Database Exporters**: MongoDB/PostgreSQL (commented out - need database configuration)
+- ❌ **Application Layer**: Jenkins/Redis/FastAPI (commented out - need external service configuration)
+
+#### **7.3: Add Loki Data Source (Logs)**
+
+Loki aggregates and stores logs from the Promtail log collection agent.
+
+**Step-by-Step Instructions:**
+
+1. **Add New Data Source**:
+   - Go to **Configuration** → **Data Sources**
+   - Click **Add data source**
+   - Select **Loki** from the list
+
+2. **Configure Loki Connection**:
+   ```yaml
+   Name: Loki
+   URL: http://loki:3100
+   Access: Server (default)
+   ```
+   
+   **Important Notes**:
+   - Use `http://loki:3100` (internal Kubernetes service name)
+   - **NOT** `http://localhost:3100` (this is for external access only)
+
+3. **Test Connection**:
+   - Click **Save & Test**
+   - You should see: ✅ **"Data source connected and labels found"**
+
+4. **Verify Log Availability**:
+   - Navigate to **Explore**
+   - Select **Loki** from the dropdown
+   - Try a simple query: `{job="varlogs"}`
+   - You should see container logs from your Kubernetes cluster
+
+#### **7.4: Data Source Configuration Summary**
+
+**✅ Required Data Sources (Core Functionality):**
+
+| Data Source | URL | Purpose | Status |
+|-------------|-----|---------|---------|
+| **Prometheus** | `http://prometheus:9090` | Metrics from all working exporters | ✅ Ready to configure |
+| **Loki** | `http://loki:3100` | Container logs and application logs | ✅ Ready to configure |
+
+**❌ Optional Data Sources (Require External Configuration):**
+
+| Service | Status | Reason | When to Add |
+|---------|--------|---------|-------------|
+| **MongoDB Exporter** | ⏸️ Commented out | Needs actual MongoDB database connection | After MongoDB setup |
+| **PostgreSQL Exporter** | ⏸️ Commented out | Needs actual PostgreSQL database connection | After PostgreSQL setup |
+| **Jenkins Exporter** | ⏸️ Commented out | Needs actual Jenkins server connection | After Jenkins setup |
+| **Redis Exporter** | ⏸️ Commented out | Needs actual Redis server connection | After Redis setup |
+| **FastAPI Metrics** | ⏸️ Commented out | Needs custom FastAPI application code | After FastAPI development |
+
+**Why Only Two Data Sources?**
+
+- **Prometheus** acts as the central metrics aggregator - it scrapes metrics from ALL working exporters
+- **Individual exporters** (Node, Blackbox, kube-state-metrics) don't need separate data sources
+- **Loki** is independent for log aggregation
+- **Database/Application exporters** are currently commented out due to missing external dependencies
+
+#### **7.5: Verify Data Source Health**
+
+**Check Prometheus Targets:**
+1. Access Prometheus UI: `http://localhost:9090`
+2. Navigate to **Status** → **Targets**
+3. Verify these targets are **UP**:
+   - `prometheus` (localhost:9090)
+   - `blackbox` (blackbox-exporter:9115)
+   - `kube-state-metrics` (kube-state-metrics:8080)
+   - `node-exporter` (discovered via Kubernetes)
+
+**Check Loki Labels:**
+1. Access Loki directly: `http://localhost:3100/loki/api/v1/labels`
+2. Should return JSON with available log labels
+3. Or use Grafana Explore with query: `{job="varlogs"}`
+
+### **Step 8: Query Data and Create Dashboards**
+
+Now that data sources are configured, you can start querying metrics and logs.
+
+#### **8.1: Logs (Loki Queries)**
+
+Use these queries in Grafana Explore with the Loki data source:
+
+**Basic Log Queries:**
+- `{job="varlogs"}` - All container logs
+- `{job="varlogs"} |= "error"` - Error logs only
+- `{namespace="kube-observability-stack"}` - Logs from observability namespace
+- `{container_name="grafana"}` - Grafana specific logs
+
+#### **8.2: Metrics (Prometheus Queries)**
+
+Use these queries in Grafana Explore with the Prometheus data source:
+
+**Currently Available Metrics (Working Services):**
+
+**1. Core Infrastructure Queries:**
+- `up` - Service availability across all services
+- `probe_success{job="blackbox"}` - External endpoint health (Google, GitHub, Example.com)
+- `prometheus_http_requests_total` - Prometheus request rates
+
+**2. Kubernetes Health Queries (kube-state-metrics):**
+- `kube_pod_status_phase` - Pod status across cluster  
+- `kube_deployment_status_replicas` - Deployment replica status
+- `kube_node_status_condition` - Node health status
+- `kube_pod_container_status_restarts_total` - Container restart rates
+- `kube_service_info` - Service information
+
+**3. System Metrics (Node Exporter):**
+- `node_cpu_seconds_total` - CPU usage metrics
+- `node_memory_MemTotal_bytes` - Memory information
+- `node_filesystem_size_bytes` - Disk usage metrics
+- `node_load1` - System load average
+
+**Currently Unavailable Metrics (Commented Out Services):**
+
+**Database Metrics:**
+- ❌ `mongodb_up` - MongoDB connection status (needs database setup)
+- ❌ `pg_up` - PostgreSQL connection status (needs database setup)
+
+**Application Layer Metrics:**
+- ❌ `jenkins_job_success_percentage` - Jenkins build success rates (needs Jenkins server)
+- ❌ `redis_connected_clients` - Redis connections (needs Redis server) 
+- ❌ `test_executions_total` - FastAPI test metrics (needs custom application)
+
+#### **8.3: Creating Dashboards**
+
+Once you have verified that data sources are working and you can query metrics/logs, you can create custom dashboards:
+
+1. **Navigate to Dashboards**:
+   - Click on **📊 Dashboards** in the left sidebar
+   - Click **New** → **New Dashboard**
+   - Click **Add visualization**
+
+2. **Select Data Source and Create Panels**:
+   - Choose **Prometheus** for metrics or **Loki** for logs
+   - Use the queries from sections 8.1 and 8.2 above
+   - Customize visualization type (Time series, Gauge, Table, etc.)
+
+3. **Recommended Starting Dashboards**:
+   - **System Overview**: Node metrics, CPU, Memory, Disk
+   - **Kubernetes Cluster Health**: Pod status, deployments, services
+   - **External Monitoring**: Blackbox probe results
+   - **Log Analysis**: Container logs with filtering
+
+#### **8.4: Troubleshooting Data Sources**
+
+**Common Issues and Solutions:**
+
+| Issue | Symptom | Solution |
+|-------|---------|----------|
+| **Prometheus not connecting** | "Data source is not working" error | Verify port forwarding is active, use `http://prometheus:9090` |
+| **No metrics visible** | Empty queries in Explore | Check Prometheus targets at `http://localhost:9090/targets` |
+| **Loki not connecting** | "Data source connected but no labels found" | Verify Promtail is running and collecting logs |
+| **No logs visible** | Empty log queries | Check if container logs are being generated |
+
+**Quick Health Check Commands:**
+```bash
+# Check if services are running
+./check-services.sh
+
+# Verify Prometheus targets
+curl http://localhost:9090/api/v1/targets
+
+# Verify Loki labels  
+curl http://localhost:3100/loki/api/v1/labels
+
+# Check pod status
+kubectl get pods -n kube-observability-stack
+```
 
 ---
 
