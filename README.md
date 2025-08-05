@@ -1,6 +1,12 @@
-# Fullstack Observability Stack
+# Comprehensive Observability Stack
 
-This repository provides a step-by-step guide to set up an observability stack using Kubernetes and Helm. The stack includes Prometheus, Grafana, Loki, Promtail, Node Exporter, and Blackbox Exporter.
+This repository provides a step-by-step guide to set up a comprehensive observability stack using Kubernetes and Helm. The solution provides complete monitoring and logging capabilities for modern applications, especially test automation platforms and Kubernetes clusters.
+
+**Components Include:**
+- **🎯 Core Stack**: Prometheus, Grafana, Loki, Promtail
+- **🔧 Infrastructure Exporters**: Node Exporter, Blackbox Exporter  
+- **⚡ Foundation Exporters (Week 1-2)**: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
+- **🚀 Ready for Application Layer (Week 3-4)**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
 
 ---
 
@@ -35,10 +41,21 @@ chmod +x check-services.sh
 ```
 
 **Access URLs:**
+
+**📊 Core Services:**
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Prometheus**: http://localhost:9090
 - **Loki**: http://localhost:3100  
+
+**🔧 Infrastructure Exporters:**
 - **Blackbox Exporter**: http://localhost:9115
+- **Node Exporter**: http://localhost:9100
+- **Promtail**: http://localhost:9080
+
+**⚡ Foundation Exporters (Week 1-2):**
+- **kube-state-metrics**: http://localhost:8080
+- **MongoDB Exporter**: http://localhost:9216
+- **PostgreSQL Exporter**: http://localhost:9187
 
 ---
 
@@ -49,28 +66,45 @@ opensource-observability-package/
 ├── helm-kube-observability-stack/
 │   ├── charts/
 │   ├── templates/
+│   │   ├── # Core Stack
 │   │   ├── grafana-deployment.yaml
 │   │   ├── grafana-service.yaml
 │   │   ├── loki-deployment.yaml
 │   │   ├── loki-service.yaml
-│   │   ├── node-exporter-daemonset.yaml
-│   │   ├── node-exporter-service.yaml
 │   │   ├── prometheus-deployment.yaml
 │   │   ├── prometheus-service.yaml
 │   │   ├── prometheus-config.yaml
 │   │   ├── promtail-deployment.yaml
 │   │   ├── promtail-service.yaml
 │   │   ├── promtail-config.yaml
+│   │   ├── promtail-rbac.yaml
+│   │   ├── # Infrastructure Exporters  
+│   │   ├── node-exporter-daemonset.yaml
+│   │   ├── node-exporter-service.yaml
 │   │   ├── blackbox-exporter-deployment.yaml
 │   │   ├── blackbox-exporter-service.yaml
 │   │   ├── blackbox-exporter-config.yaml
+│   │   ├── # Foundation Exporters (Week 1-2)
+│   │   ├── kube-state-metrics-deployment.yaml
+│   │   ├── kube-state-metrics-service.yaml
+│   │   ├── kube-state-metrics-rbac.yaml
+│   │   ├── mongodb-exporter-deployment.yaml
+│   │   ├── mongodb-exporter-service.yaml
+│   │   ├── mongodb-exporter-secret.yaml
+│   │   ├── postgres-exporter-deployment.yaml
+│   │   ├── postgres-exporter-service.yaml
+│   │   ├── postgres-exporter-secret.yaml
+│   │   ├── # Kubernetes Resources
 │   │   ├── namespace.yaml
 │   │   ├── ingress.yaml
 │   │   ├── NOTES.txt
 │   ├── values.yaml
 │   ├── Chart.yaml
-├── start-observability.sh       # Multi-port forwarding script
-├── check-services.sh           # Service health check script
+├── start-observability.sh       # Comprehensive multi-port forwarding script
+├── check-services.sh           # Enhanced service health check script
+├── Document/
+│   ├── Kopensource-package-kubernetes.md  # Technical documentation
+│   └── architecture.png
 └── README.md
 ```
 
@@ -164,23 +198,90 @@ kubectl port-forward svc/blackbox-exporter 9115:9115 -n kube-observability-stack
 ```
 Access Blackbox Exporter at `http://localhost:9115`.
 
+#### Node Exporter (If Needed)
+```bash
+kubectl port-forward svc/node-exporter 9100:9100 -n kube-observability-stack
+```
+Access Node Exporter at `http://localhost:9100`.
+
 #### Promtail (If Needed)
 ```bash
-kubectl port-forward -n kube-observability-stack svc/promtail 9080:9080
+kubectl port-forward svc/promtail 9080:9080 -n kube-observability-stack
 ```
 Access Promtail at `http://localhost:9080`.
+
+### Foundation Exporters (Week 1-2)
+
+#### kube-state-metrics
+```bash
+kubectl port-forward svc/kube-state-metrics 8080:8080 -n kube-observability-stack
+```
+Access kube-state-metrics at `http://localhost:8080`.
+
+#### MongoDB Exporter
+```bash
+kubectl port-forward svc/mongodb-exporter 9216:9216 -n kube-observability-stack
+```
+Access MongoDB Exporter at `http://localhost:9216`.
+
+#### PostgreSQL Exporter
+```bash
+kubectl port-forward svc/postgres-exporter 9187:9187 -n kube-observability-stack
+```
+Access PostgreSQL Exporter at `http://localhost:9187`.
 ---
 
 ### Step 5: Access the Services
 Once the ports are forwarded (using either automated scripts or manual commands), you can access the services locally using the following URLs:
 
+**📊 Core Services:**
 ```bash
 Grafana: http://localhost:3000        (Username: admin, Password: admin)
 Prometheus: http://localhost:9090
 Loki: http://localhost:3100
+```
+
+**🔧 Infrastructure Exporters:**
+```bash
+Node Exporter: http://localhost:9100
 Promtail: http://localhost:9080
 Blackbox Exporter: http://localhost:9115
 ```
+
+**⚡ Foundation Exporters (Week 1-2):**
+```bash
+kube-state-metrics: http://localhost:8080
+MongoDB Exporter: http://localhost:9216
+PostgreSQL Exporter: http://localhost:9187
+```
+
+---
+
+## Foundation Exporters Configuration (Week 1-2)
+
+### MongoDB Exporter Setup
+Before using the MongoDB Exporter, configure your database connection in `values.yaml`:
+
+```yaml
+mongodbExporter:
+  mongodbUri: "mongodb://your-username:your-password@your-mongodb-host:27017/admin"
+```
+
+### PostgreSQL Exporter Setup
+Before using the PostgreSQL Exporter, configure your database connection in `values.yaml`:
+
+```yaml
+postgresExporter:
+  dataSourceName: "postgresql://your-username:your-password@your-postgres-host:5432/your-database?sslmode=disable"
+```
+
+### Update Deployment
+After updating the configuration, redeploy the stack:
+```bash
+helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
+```
+
+---
 
 ## Adding Data Sources in Grafana
 
@@ -211,6 +312,73 @@ Blackbox Exporter: http://localhost:9115
    - Select **Loki**.
    - Set the URL to `http://loki:3100` (internal service name and port for Loki in Kubernetes).
    - Click **Save & Test**.
+
+---
+
+## Sample Queries
+
+### Logs (Loki)
+```promql
+{job="varlogs"}                          # All container logs
+{job="varlogs"} |= "error"              # Error logs only
+{namespace="kube-observability-stack"}   # Observability namespace logs
+```
+
+### Core Infrastructure (Prometheus)
+```promql
+up                                       # Service availability
+probe_success{job="blackbox"}           # External endpoint health
+rate(prometheus_http_requests_total[5m]) # Prometheus request rate
+```
+
+### Kubernetes Health (kube-state-metrics)
+```promql
+kube_pod_status_phase                    # Pod status across cluster
+kube_deployment_status_replicas          # Deployment replica status
+kube_node_status_condition               # Node health status
+kube_pod_container_status_restarts_total # Container restart rates
+```
+
+### Database Metrics
+```promql
+mongodb_up                               # MongoDB connection status
+pg_up                                    # PostgreSQL connection status
+mongodb_connections                      # MongoDB active connections
+postgres_connections                     # PostgreSQL connections
+```
+
+## Enhanced Service Health Monitoring
+
+The `check-services.sh` script now provides comprehensive status monitoring for all components:
+
+```bash
+🔍 Checking Observability Services Status
+==========================================
+
+🔹 Core Observability Services:
+✅ Grafana        : Running (http://localhost:3000)
+✅ Prometheus     : Running (http://localhost:9090)
+✅ Loki           : Running (http://localhost:3100/metrics)
+
+🔹 Infrastructure Exporters:
+✅ Blackbox Export: Running (http://localhost:9115)
+✅ Node Exporter  : Running (http://localhost:9100)
+✅ Promtail       : Running (http://localhost:9080)
+
+🔹 Foundation Exporters (Week 1-2):
+✅ kube-state-metrics: Running (http://localhost:8080)
+✅ MongoDB Exporter  : Running (http://localhost:9216)
+✅ PostgreSQL Exporter: Running (http://localhost:9187)
+
+📋 Default Credentials:
+   Grafana: admin/admin
+
+🔗 Quick Links:
+   • Grafana Dashboard: http://localhost:3000
+   • Prometheus Targets: http://localhost:9090/targets
+   • Kubernetes Metrics: http://localhost:8080/metrics
+   • Node Metrics: http://localhost:9100/metrics
+```
 
 ---
 
@@ -260,14 +428,26 @@ spec:
 
 ## Ports and Access
 
-| Application   | Port  | Access Method           |
-|---------------|-------|-------------------------|
-| Grafana       | 3000  | Port-forward or NodePort|
-| Prometheus    | 9090  | Port-forward            |
-| Loki          | 3100  | Port-forward            |
-| Node Exporter | 9100  | Internal ClusterIP      |
-| Promtail      | 9080  | Internal ClusterIP      |
-| Blackbox      | 9115  | Internal ClusterIP      |
+### Core Observability Services
+| Application   | Port  | Access Method           | Description |
+|---------------|-------|-------------------------|-------------|
+| Grafana       | 3000  | Port-forward or NodePort| Visualization & Dashboards |
+| Prometheus    | 9090  | Port-forward            | Metrics Collection & Query |
+| Loki          | 3100  | Port-forward            | Log Aggregation |
+
+### Infrastructure Exporters
+| Application   | Port  | Access Method           | Description |
+|---------------|-------|-------------------------|-------------|
+| Node Exporter | 9100  | Port-forward / Internal | System Metrics (CPU, Memory, Disk) |
+| Promtail      | 9080  | Port-forward / Internal | Log Collection Agent |
+| Blackbox      | 9115  | Port-forward / Internal | External Endpoint Monitoring |
+
+### Foundation Exporters (Week 1-2)
+| Application   | Port  | Access Method           | Description |
+|---------------|-------|-------------------------|-------------|
+| kube-state-metrics | 8080  | Port-forward / Internal | Kubernetes Cluster Health |
+| MongoDB Exporter   | 9216  | Port-forward / Internal | NoSQL Database Metrics |
+| PostgreSQL Exporter| 9187  | Port-forward / Internal | Relational Database Metrics |
 
 ---
 
@@ -323,8 +503,15 @@ minikube addons enable ingress
 minikube tunnel
 
 # Access services via domains (requires /etc/hosts entries)
+# Core Services
 # http://grafana.os.com
 # http://prometheus.os.com
 # http://loki.os.com
+# Infrastructure Exporters
 # http://blackbox.os.com
+# http://node-exporter.os.com
+# Foundation Exporters
+# http://kube-state-metrics.os.com
+# http://mongodb-exporter.os.com
+# http://postgres-exporter.os.com
 ```

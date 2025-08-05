@@ -16,11 +16,23 @@ check_service() {
     fi
 }
 
-# Check each service
+# Check Core Observability Services
+echo "🔹 Core Observability Services:"
 check_service "Grafana        " "http://localhost:3000"
 check_service "Prometheus     " "http://localhost:9090"
 check_service "Loki           " "http://localhost:3100/metrics"
+
+echo
+echo "🔹 Infrastructure Exporters:"
 check_service "Blackbox Export" "http://localhost:9115"
+check_service "Node Exporter  " "http://localhost:9100"
+check_service "Promtail       " "http://localhost:9080"
+
+echo
+echo "🔹 Foundation Exporters (Week 1-2):"
+check_service "kube-state-metrics" "http://localhost:8080"
+check_service "MongoDB Exporter  " "http://localhost:9216"
+check_service "PostgreSQL Exporter" "http://localhost:9187"
 
 echo
 echo "📋 Default Credentials:"
@@ -32,3 +44,6 @@ echo "   • Prometheus Targets: http://localhost:9090/targets"
 echo "   • Prometheus Graph: http://localhost:9090/graph"
 echo "   • Loki Labels: http://localhost:3100/loki/api/v1/labels"
 echo "   • Blackbox Metrics: http://localhost:9115/metrics"
+echo "   • Kubernetes Metrics: http://localhost:8080/metrics"
+echo "   • Node Metrics: http://localhost:9100/metrics"
+echo "   • Promtail Metrics: http://localhost:9080/metrics"

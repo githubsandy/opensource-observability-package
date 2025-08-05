@@ -183,6 +183,51 @@ blackboxExporter:
       cpu: "250m"
       memory: "64Mi"
 
+# Foundation Exporters Configuration
+kubeStateMetrics:
+  image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.1
+  replicas: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  service:
+    type: ClusterIP
+    port: 8080
+
+mongodbExporter:
+  image: percona/mongodb_exporter:0.40.0
+  replicas: 1
+  mongodbUri: "mongodb://username:password@mongodb-host:27017"  # Change this to your MongoDB URI
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+    port: 9216
+
+postgresExporter:
+  image: prometheuscommunity/postgres-exporter:v0.15.0
+  replicas: 1
+  dataSourceName: "postgresql://username:password@postgres-host:5432/dbname?sslmode=disable"  # Change this to your PostgreSQL connection string
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+    port: 9187
+
 ingress:
   enabled: true
   className: "nginx"  # Change to your ingress class (nginx, traefik, etc.)

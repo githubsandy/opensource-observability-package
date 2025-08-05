@@ -32,3 +32,33 @@ data:
             target_label: instance
           - target_label: __address__
             replacement: blackbox-exporter:9115
+
+      # kube-state-metrics scrape job
+      - job_name: 'kube-state-metrics'
+        static_configs:
+          - targets: ['kube-state-metrics:8080']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      # MongoDB Exporter scrape job  
+      - job_name: 'mongodb-exporter'
+        static_configs:
+          - targets: ['mongodb-exporter:9216']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      # PostgreSQL Exporter scrape job
+      - job_name: 'postgres-exporter' 
+        static_configs:
+          - targets: ['postgres-exporter:9187']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      # Node Exporter scrape job
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_endpoints_name]
+            regex: 'node-exporter'
+            action: keep

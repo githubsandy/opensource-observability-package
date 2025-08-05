@@ -1,7 +1,13 @@
 # **Technical User Design Document: Kubernetes Observability Stack**
 
 ## **Overview**
-This document provides a step-by-step guide to set up an observability stack using Kubernetes and Helm. It includes all the prerequisites, file descriptions, commands, and configurations required to deploy and manage the solution. The observability stack consists of Prometheus, Grafana, Loki, Promtail, Node Exporter and Blackbox exporter.
+This document provides a step-by-step guide to set up a comprehensive observability stack using Kubernetes and Helm. The solution provides complete monitoring and logging capabilities for modern applications, especially test automation platforms and Kubernetes clusters.
+
+**Components Include:**
+- **Core Stack**: Prometheus, Grafana, Loki, Promtail
+- **Infrastructure Exporters**: Node Exporter, Blackbox Exporter  
+- **Foundation Exporters  **: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
+- **Ready for Application Layer (Week 3-4)**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
 
 ---
 
@@ -23,22 +29,35 @@ Here is the directory structure of the Helm chart used for the observability sta
 helm-kube-observability-stack/
 ├── charts/
 ├── templates/
+│   ├── # Core Stack
 │   ├── grafana-deployment.yaml
 │   ├── grafana-service.yaml
 │   ├── loki-deployment.yaml
 │   ├── loki-service.yaml
-│   ├── node-exporter-daemonset.yaml
-│   ├── node-exporter-service.yaml
 │   ├── prometheus-deployment.yaml
 │   ├── prometheus-service.yaml
 │   ├── prometheus-config.yaml
 │   ├── promtail-deployment.yaml
 │   ├── promtail-service.yaml
 │   ├── promtail-config.yaml
+│   ├── promtail-rbac.yaml
+│   ├── # Infrastructure Exporters  
+│   ├── node-exporter-daemonset.yaml
+│   ├── node-exporter-service.yaml
 │   ├── blackbox-exporter-deployment.yaml
 │   ├── blackbox-exporter-service.yaml
 │   ├── blackbox-exporter-config.yaml
-│   ├── prometheus-config.yaml
+│   ├── # Foundation Exporters  
+│   ├── kube-state-metrics-deployment.yaml
+│   ├── kube-state-metrics-service.yaml
+│   ├── kube-state-metrics-rbac.yaml
+│   ├── mongodb-exporter-deployment.yaml
+│   ├── mongodb-exporter-service.yaml
+│   ├── mongodb-exporter-secret.yaml
+│   ├── postgres-exporter-deployment.yaml
+│   ├── postgres-exporter-service.yaml
+│   ├── postgres-exporter-secret.yaml
+│   ├── # Kubernetes Resources
 │   ├── namespace.yaml
 │   ├── ingress.yaml
 │   ├── NOTES.txt
@@ -244,7 +263,7 @@ spec:
 ```
 
 #### 6. **blackbox-exporter-deployment.yaml**:
-   - Deploys Blackbox Exporter pods.
+   - Deploys Blackbox Exporter pods for external endpoint monitoring.
    - Configures Blackbox Exporter container image and resource limits.
    - Mounts the Blackbox Exporter configuration file.
    - Exposes Blackbox Exporter on port `9115`
@@ -284,6 +303,131 @@ spec:
       - name: blackbox-config
         configMap:
           name: blackbox-exporter-config
+```
+
+### **Foundation Exporters  **
+
+#### 7. **kube-state-metrics-deployment.yaml**:
+   - Deploys kube-state-metrics for Kubernetes cluster health monitoring.
+   - Provides comprehensive metrics about Kubernetes objects (pods, deployments, services, etc.).
+   - Essential for monitoring test automation infrastructure.
+   - Exposes metrics on port `8080`
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-state-metrics
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.kubeStateMetrics.replicas }}
+  selector:
+    matchLabels:
+      app: kube-state-metrics
+  template:
+    metadata:
+      labels:
+        app: kube-state-metrics
+    spec:
+      serviceAccount: kube-state-metrics
+      containers:
+      - name: kube-state-metrics
+        image: {{ .Values.kubeStateMetrics.image }}
+        ports:
+        - containerPort: 8080
+          name: http-metrics
+        - containerPort: 8081
+          name: telemetry
+        resources:
+          limits:
+            cpu: {{ .Values.kubeStateMetrics.resources.limits.cpu }}
+            memory: {{ .Values.kubeStateMetrics.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.kubeStateMetrics.resources.requests.cpu }}
+            memory: {{ .Values.kubeStateMetrics.resources.requests.memory }}
+```
+
+#### 8. **mongodb-exporter-deployment.yaml**:
+   - Deploys MongoDB Exporter for NoSQL database monitoring.
+   - Critical for monitoring test results and metadata storage.
+   - Tracks database performance, connections, and operations.
+   - Exposes metrics on port `9216`
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongodb-exporter
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.mongodbExporter.replicas }}
+  selector:
+    matchLabels:
+      app: mongodb-exporter
+  template:
+    metadata:
+      labels:
+        app: mongodb-exporter
+    spec:
+      containers:
+      - name: mongodb-exporter
+        image: {{ .Values.mongodbExporter.image }}
+        ports:
+        - containerPort: 9216
+          name: http-metrics
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-exporter-secret
+              key: mongodb-uri
+        resources:
+          limits:
+            cpu: {{ .Values.mongodbExporter.resources.limits.cpu }}
+            memory: {{ .Values.mongodbExporter.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.mongodbExporter.resources.requests.cpu }}
+            memory: {{ .Values.mongodbExporter.resources.requests.memory }}
+```
+
+#### 9. **postgres-exporter-deployment.yaml**:
+   - Deploys PostgreSQL Exporter for relational database monitoring.
+   - Essential for monitoring user management and relational data.
+   - Tracks database connections, query performance, and health.
+   - Exposes metrics on port `9187`
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-exporter
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.postgresExporter.replicas }}
+  selector:
+    matchLabels:
+      app: postgres-exporter
+  template:
+    metadata:
+      labels:
+        app: postgres-exporter
+    spec:
+      containers:
+      - name: postgres-exporter
+        image: {{ .Values.postgresExporter.image }}
+        ports:
+        - containerPort: 9187
+          name: http-metrics
+        env:
+        - name: DATA_SOURCE_NAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-exporter-secret
+              key: data-source-name
+        resources:
+          limits:
+            cpu: {{ .Values.postgresExporter.resources.limits.cpu }}
+            memory: {{ .Values.postgresExporter.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.postgresExporter.resources.requests.cpu }}
+            memory: {{ .Values.postgresExporter.resources.requests.memory }}
 ```
 ---
 
@@ -396,6 +540,72 @@ spec:
       targetPort: 9115
   type: ClusterIP
 ```
+
+### **Foundation Exporter Services**
+
+#### 7. **kube-state-metrics-service.yaml**:
+   - Exposes kube-state-metrics internally via `ClusterIP`.
+   - Ports: `8080` (metrics), `8081` (telemetry).
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-state-metrics
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.kubeStateMetrics.service.type }}
+  ports:
+  - name: http-metrics
+    port: {{ .Values.kubeStateMetrics.service.port }}
+    targetPort: 8080
+    protocol: TCP
+  - name: telemetry
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  selector:
+    app: kube-state-metrics
+```
+
+#### 8. **mongodb-exporter-service.yaml**:
+   - Exposes MongoDB Exporter internally via `ClusterIP`.
+   - Port: `9216`.
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongodb-exporter
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.mongodbExporter.service.type }}
+  ports:
+  - name: http-metrics
+    port: {{ .Values.mongodbExporter.service.port }}
+    targetPort: 9216
+    protocol: TCP
+  selector:
+    app: mongodb-exporter
+```
+
+#### 9. **postgres-exporter-service.yaml**:
+   - Exposes PostgreSQL Exporter internally via `ClusterIP`.
+   - Port: `9187`.
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-exporter
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.postgresExporter.service.type }}
+  ports:
+  - name: http-metrics
+    port: {{ .Values.postgresExporter.service.port }}
+    targetPort: 9187
+    protocol: TCP
+  selector:
+    app: postgres-exporter
+```
 ---
 
 ### **Configuration Files**
@@ -446,8 +656,8 @@ data:
           valid_status_codes: []
 ```
 #### 2. **prometheus-config.yaml**:
-   - Configures Prometheus to scrape metrics from Blackbox Exporter.
-   - Defines scrape jobs for external endpoints.
+   - Configures Prometheus to scrape metrics from all exporters.
+   - Defines scrape jobs for core services, infrastructure, and foundation exporters.
 ```yaml
 apiVersion: v1
 kind: ConfigMap
@@ -482,7 +692,37 @@ data:
           - source_labels: [__param_target]
             target_label: instance
           - target_label: __address__
-            replacement:
+            replacement: blackbox-exporter:9115
+
+      # kube-state-metrics scrape job
+      - job_name: 'kube-state-metrics'
+        static_configs:
+          - targets: ['kube-state-metrics:8080']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      # MongoDB Exporter scrape job  
+      - job_name: 'mongodb-exporter'
+        static_configs:
+          - targets: ['mongodb-exporter:9216']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      # PostgreSQL Exporter scrape job
+      - job_name: 'postgres-exporter' 
+        static_configs:
+          - targets: ['postgres-exporter:9187']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      # Node Exporter scrape job
+      - job_name: 'node-exporter'
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_endpoints_name]
+            regex: 'node-exporter'
+            action: keep
 ```
 ####  2. **values.yaml**:
    - Centralized configuration for the Helm chart.
@@ -557,6 +797,51 @@ blackboxExporter:
     requests:
       cpu: "250m"
       memory: "64Mi"
+
+# Foundation Exporters Configuration
+kubeStateMetrics:
+  image: registry.k8s.io/kube-state-metrics/kube-state-metrics:v2.10.1
+  replicas: 1
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  service:
+    type: ClusterIP
+    port: 8080
+
+mongodbExporter:
+  image: percona/mongodb_exporter:0.40.0
+  replicas: 1
+  mongodbUri: "mongodb://username:password@mongodb-host:27017"  # Change to your MongoDB URI
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+    port: 9216
+
+postgresExporter:
+  image: prometheuscommunity/postgres-exporter:v0.15.0
+  replicas: 1
+  dataSourceName: "postgresql://username:password@postgres-host:5432/dbname?sslmode=disable"  # Change to your PostgreSQL connection string
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+    port: 9187
 ```
 ---
 
@@ -672,15 +957,29 @@ This script automatically starts port forwarding for all observability services 
 **Script Content:**
 ```bash
 #!/bin/bash
-echo "Starting observability services..."
-echo "Grafana will be available at: http://localhost:3000"
-echo "Prometheus will be available at: http://localhost:9090" 
-echo "Loki will be available at: http://localhost:3100"
-echo "Blackbox Exporter will be available at: http://localhost:9115"
-echo ""
+echo "🚀 Starting Comprehensive Observability Stack..."
+echo "=============================================="
+echo
+echo "📊 Core Services:"
+echo "   • Grafana: http://localhost:3000"
+echo "   • Prometheus: http://localhost:9090"
+echo "   • Loki: http://localhost:3100"
+echo
+echo "🔍 Infrastructure Exporters:"
+echo "   • Blackbox Exporter: http://localhost:9115"
+echo "   • Node Exporter: http://localhost:9100"
+echo "   • Promtail: http://localhost:9080"
+echo
+echo "⚡ Foundation Exporters  :"
+echo "   • kube-state-metrics: http://localhost:8080"
+echo "   • MongoDB Exporter: http://localhost:9216"
+echo "   • PostgreSQL Exporter: http://localhost:9187"
+echo
 echo "Press Ctrl+C to stop all services"
+echo "=============================================="
 
-# Start all port forwards in background
+# Start Core Services
+echo "Starting core services..."
 kubectl port-forward svc/grafana 3000:3000 -n kube-observability-stack &
 PID1=$!
 
@@ -690,11 +989,32 @@ PID2=$!
 kubectl port-forward svc/loki 3100:3100 -n kube-observability-stack &
 PID3=$!
 
+# Start Infrastructure Exporters
+echo "Starting infrastructure exporters..."
 kubectl port-forward svc/blackbox-exporter 9115:9115 -n kube-observability-stack &
 PID4=$!
 
+kubectl port-forward svc/node-exporter 9100:9100 -n kube-observability-stack &
+PID5=$!
+
+kubectl port-forward svc/promtail 9080:9080 -n kube-observability-stack &
+PID6=$!
+
+# Start Foundation Exporters
+echo "Starting foundation exporters..."
+kubectl port-forward svc/kube-state-metrics 8080:8080 -n kube-observability-stack &
+PID7=$!
+
+kubectl port-forward svc/mongodb-exporter 9216:9216 -n kube-observability-stack &
+PID8=$!
+
+kubectl port-forward svc/postgres-exporter 9187:9187 -n kube-observability-stack &
+PID9=$!
+
+echo "✅ All services started! Use ./check-services.sh to verify status"
+
 # Wait for interrupt
-trap "kill $PID1 $PID2 $PID3 $PID4; exit" INT
+trap "echo 'Stopping all services...'; kill $PID1 $PID2 $PID3 $PID4 $PID5 $PID6 $PID7 $PID8 $PID9; exit" INT
 wait
 ```
 
@@ -737,11 +1057,23 @@ check_service() {
     fi
 }
 
-# Check each service
+# Check Core Observability Services
+echo "🔹 Core Observability Services:"
 check_service "Grafana        " "http://localhost:3000"
 check_service "Prometheus     " "http://localhost:9090"
 check_service "Loki           " "http://localhost:3100/metrics"
+
+echo
+echo "🔹 Infrastructure Exporters:"
 check_service "Blackbox Export" "http://localhost:9115"
+check_service "Node Exporter  " "http://localhost:9100"
+check_service "Promtail       " "http://localhost:9080"
+
+echo
+echo "🔹 Foundation Exporters  :"
+check_service "kube-state-metrics" "http://localhost:8080"
+check_service "MongoDB Exporter  " "http://localhost:9216"
+check_service "PostgreSQL Exporter" "http://localhost:9187"
 
 echo
 echo "📋 Default Credentials:"
@@ -753,6 +1085,9 @@ echo "   • Prometheus Targets: http://localhost:9090/targets"
 echo "   • Prometheus Graph: http://localhost:9090/graph"
 echo "   • Loki Labels: http://localhost:3100/loki/api/v1/labels"
 echo "   • Blackbox Metrics: http://localhost:9115/metrics"
+echo "   • Kubernetes Metrics: http://localhost:8080/metrics"
+echo "   • Node Metrics: http://localhost:9100/metrics"
+echo "   • Promtail Metrics: http://localhost:9080/metrics"
 ```
 
 **Usage:**
@@ -769,10 +1104,20 @@ chmod +x check-services.sh
 🔍 Checking Observability Services Status
 ==========================================
 
+🔹 Core Observability Services:
 ✅ Grafana        : Running (http://localhost:3000)
 ✅ Prometheus     : Running (http://localhost:9090)
 ✅ Loki           : Running (http://localhost:3100/metrics)
+
+🔹 Infrastructure Exporters:
 ✅ Blackbox Export: Running (http://localhost:9115)
+✅ Node Exporter  : Running (http://localhost:9100)
+✅ Promtail       : Running (http://localhost:9080)
+
+🔹 Foundation Exporters  :
+✅ kube-state-metrics: Running (http://localhost:8080)
+✅ MongoDB Exporter  : Running (http://localhost:9216)
+✅ PostgreSQL Exporter: Running (http://localhost:9187)
 
 📋 Default Credentials:
    Grafana: admin/admin
@@ -783,6 +1128,9 @@ chmod +x check-services.sh
    • Prometheus Graph: http://localhost:9090/graph
    • Loki Labels: http://localhost:3100/loki/api/v1/labels
    • Blackbox Metrics: http://localhost:9115/metrics
+   • Kubernetes Metrics: http://localhost:8080/metrics
+   • Node Metrics: http://localhost:9100/metrics
+   • Promtail Metrics: http://localhost:9080/metrics
 ```
 
 #### **Advantages of Automated Scripts**
@@ -945,15 +1293,50 @@ Access Grafana at http://<node-ip>:32000.
 
 
 
-### **Step 5: Query Logs in Grafana**
+### **Step 5: Configure Foundation Exporters  **
+
+Before using the MongoDB and PostgreSQL exporters, configure their database connections in `values.yaml`:
+
+#### **MongoDB Configuration**
+```yaml
+mongodbExporter:
+  mongodbUri: "mongodb://your-username:your-password@your-mongodb-host:27017/admin"
+```
+
+#### **PostgreSQL Configuration**  
+```yaml
+postgresExporter:
+  dataSourceName: "postgresql://your-username:your-password@your-postgres-host:5432/your-database?sslmode=disable"
+```
+
+#### **Update and Redeploy**
+```bash
+# Update the configuration
+helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
+```
+
+### **Step 6: Query Data in Grafana**
+
+#### **Logs (Loki)**
 1. Add Loki as a data source in Grafana.
 2. Use queries like:
-   - `{job="varlogs"}`
-   - `{job="varlogs"} |= "error"`
-3. Add Prometheus as a data source in Grafana.
-   1. Use queries like:
-   2. - `{probe_success{job="blackbox"}`
-   3. - This query shows whether the probes to the endpoints were successful (1 for success, 0 for failure).
+   - `{job="varlogs"}` - All container logs
+   - `{job="varlogs"} |= "error"` - Error logs only
+   - `{namespace="kube-observability-stack"}` - Logs from observability namespace
+
+#### **Metrics (Prometheus)**  
+1. Add Prometheus as a data source in Grafana.
+2. **Core Infrastructure Queries**:
+   - `up` - Service availability
+   - `probe_success{job="blackbox"}` - External endpoint health
+   - `kube_pod_status_phase` - Pod status across cluster
+   - `mongodb_up` - MongoDB connection status
+   - `pg_up` - PostgreSQL connection status
+
+3. **Kubernetes Health Queries**:
+   - `kube_deployment_status_replicas` - Deployment replica status
+   - `kube_node_status_condition` - Node health status
+   - `kube_pod_container_status_restarts_total` - Container restart rates
 
 ---
 
@@ -974,14 +1357,27 @@ Access Grafana at http://<node-ip>:32000.
 ---
 
 ## **Ports and Access**
-| Application   | Port  | Access Method           |
-|---------------|-------|-------------------------|
-| Grafana       | 3000  | Port-forward or NodePort|
-| Prometheus    | 9090  | Port-forward            |
-| Loki          | 3100  | Port-forward            |
-| Node Exporter | 9100  | Internal ClusterIP      |
-| Promtail      | 9080  | Internal ClusterIP      |
-| Blackbox      | 9115  | Internal ClusterIP      |
+
+### **Core Observability Services**
+| Application   | Port  | Access Method           | Description |
+|---------------|-------|-------------------------|-------------|
+| Grafana       | 3000  | Port-forward or NodePort| Visualization & Dashboards |
+| Prometheus    | 9090  | Port-forward            | Metrics Collection & Query |
+| Loki          | 3100  | Port-forward            | Log Aggregation |
+
+### **Infrastructure Exporters**  
+| Application   | Port  | Access Method           | Description |
+|---------------|-------|-------------------------|-------------|
+| Node Exporter | 9100  | Port-forward / Internal | System Metrics (CPU, Memory, Disk) |
+| Promtail      | 9080  | Port-forward / Internal | Log Collection Agent |
+| Blackbox      | 9115  | Port-forward / Internal | External Endpoint Monitoring |
+
+### **Foundation Exporters  **
+| Application   | Port  | Access Method           | Description |
+|---------------|-------|-------------------------|-------------|
+| kube-state-metrics | 8080  | Port-forward / Internal | Kubernetes Cluster Health |
+| MongoDB Exporter   | 9216  | Port-forward / Internal | NoSQL Database Metrics |
+| PostgreSQL Exporter| 9187  | Port-forward / Internal | Relational Database Metrics |
 
 ---
 
