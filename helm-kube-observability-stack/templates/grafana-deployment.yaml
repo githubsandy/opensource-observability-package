@@ -29,3 +29,10 @@ spec:
           requests:
             cpu: {{ .Values.grafana.resources.requests.cpu }}
             memory: {{ .Values.grafana.resources.requests.memory }}
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
