@@ -184,4 +184,48 @@ blackboxExporter:
       memory: "64Mi"
 
 ingress:
-  enabled: false
+  enabled: true
+  className: "nginx"  # Change to your ingress class (nginx, traefik, etc.)
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # nginx.ingress.kubernetes.io/cert-manager-cluster-issuer: "letsencrypt-prod"
+  
+  # Grafana Ingress Configuration
+  grafana:
+    enabled: true
+    host: grafana.os.com
+    path: /
+    pathType: Prefix
+    tls:
+      enabled: false
+      secretName: grafana-tls
+  
+  # Prometheus Ingress Configuration  
+  prometheus:
+    enabled: true
+    host: prometheus.os.com
+    path: /
+    pathType: Prefix
+    tls:
+      enabled: false
+      secretName: prometheus-tls
+  
+  # Loki Ingress Configuration
+  loki:
+    enabled: true
+    host: loki.os.com
+    path: /
+    pathType: Prefix
+    tls:
+      enabled: false
+      secretName: loki-tls
+  
+  # Blackbox Exporter Ingress Configuration
+  blackboxExporter:
+    enabled: true
+    host: blackbox.os.com
+    path: /
+    pathType: Prefix
+    tls:
+      enabled: false
+      secretName: blackbox-tls

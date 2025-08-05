@@ -17,32 +17,61 @@ Before starting, ensure the following tools are installed and configured:
 
 ---
 
+## 🚀 Quick Start
+
+For the fastest setup, use our automated scripts:
+
+```bash
+# 1. Deploy the Helm chart
+helm install observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack --create-namespace
+
+# 2. Start all services with port forwarding
+chmod +x start-observability.sh
+./start-observability.sh
+
+# 3. Check service status
+chmod +x check-services.sh  
+./check-services.sh
+```
+
+**Access URLs:**
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: http://localhost:9090
+- **Loki**: http://localhost:3100  
+- **Blackbox Exporter**: http://localhost:9115
+
+---
+
 ## Directory Structure
 
 ```
-helm-kube-observability-stack/
-├── charts/
-├── templates/
-│   ├── grafana-deployment.yaml
-│   ├── grafana-service.yaml
-│   ├── loki-deployment.yaml
-│   ├── loki-service.yaml
-│   ├── node-exporter-daemonset.yaml
-│   ├── node-exporter-service.yaml
-│   ├── prometheus-deployment.yaml
-│   ├── prometheus-service.yaml
-│   ├── prometheus-config.yaml
-│   ├── promtail-deployment.yaml
-│   ├── promtail-service.yaml
-│   ├── promtail-config.yaml
-│   ├── blackbox-exporter-deployment.yaml
-│   ├── blackbox-exporter-service.yaml
-│   ├── blackbox-exporter-config.yaml
-│   ├── namespace.yaml
-│   ├── ingress.yaml
-│   ├── NOTES.txt
-├── values.yaml
-├── Chart.yaml
+opensource-observability-package/
+├── helm-kube-observability-stack/
+│   ├── charts/
+│   ├── templates/
+│   │   ├── grafana-deployment.yaml
+│   │   ├── grafana-service.yaml
+│   │   ├── loki-deployment.yaml
+│   │   ├── loki-service.yaml
+│   │   ├── node-exporter-daemonset.yaml
+│   │   ├── node-exporter-service.yaml
+│   │   ├── prometheus-deployment.yaml
+│   │   ├── prometheus-service.yaml
+│   │   ├── prometheus-config.yaml
+│   │   ├── promtail-deployment.yaml
+│   │   ├── promtail-service.yaml
+│   │   ├── promtail-config.yaml
+│   │   ├── blackbox-exporter-deployment.yaml
+│   │   ├── blackbox-exporter-service.yaml
+│   │   ├── blackbox-exporter-config.yaml
+│   │   ├── namespace.yaml
+│   │   ├── ingress.yaml
+│   │   ├── NOTES.txt
+│   ├── values.yaml
+│   ├── Chart.yaml
+├── start-observability.sh       # Multi-port forwarding script
+├── check-services.sh           # Service health check script
+└── README.md
 ```
 
 ---
@@ -80,6 +109,37 @@ kubectl get services -n kube-observability-stack
 ```
 
 ### Step 4: Access Applications via Port Forwarding
+
+You can access the observability services using either **manual port forwarding** (individual commands) or **automated scripts** (recommended for easier management).
+
+#### Option A: Automated Multi-Port Forwarding (Recommended)
+
+**Start All Services:**
+```bash
+# Make the script executable
+chmod +x start-observability.sh
+
+# Start all services with a single command
+./start-observability.sh
+```
+
+**Check Service Status:**
+```bash
+# Make the script executable
+chmod +x check-services.sh
+
+# Check health of all services
+./check-services.sh
+```
+
+**Stop All Services:**
+```bash
+# Press Ctrl+C in the start-observability.sh terminal, or
+pkill -f "kubectl port-forward"
+```
+
+#### Option B: Manual Port Forwarding (Individual Commands)
+
 #### Grafana
 ```bash
 kubectl port-forward svc/grafana 3000:3000 -n kube-observability-stack
@@ -108,15 +168,15 @@ Access Blackbox Exporter at `http://localhost:9115`.
 ```bash
 kubectl port-forward -n kube-observability-stack svc/promtail 9080:9080
 ```
-Access Blackbox Exporter at `http://localhost:9115`.
+Access Promtail at `http://localhost:9080`.
 ---
 
-### Step : Access the Services
-Once the ports are forwarded, you can access the services locally using the following URLs:
+### Step 5: Access the Services
+Once the ports are forwarded (using either automated scripts or manual commands), you can access the services locally using the following URLs:
 
 ```bash
+Grafana: http://localhost:3000        (Username: admin, Password: admin)
 Prometheus: http://localhost:9090
-Grafana: http://localhost:3000
 Loki: http://localhost:3100
 Promtail: http://localhost:9080
 Blackbox Exporter: http://localhost:9115
@@ -224,7 +284,7 @@ spec:
 
 ### Install Helm Chart
 ```bash
-helm install observability-stack helm-kube-observability-stack --namespace kube-observability-stack
+helm install observability-stack helm-kube-observability-stack --namespace kube-observability-stack --create-namespace
 ```
 
 ### Upgrade Helm Chart
@@ -240,4 +300,31 @@ kubectl get deployments -n kube-observability-stack
 ### Check Services
 ```bash
 kubectl get services -n kube-observability-stack
+```
+
+### Multi-Port Forwarding (Automated)
+```bash
+# Start all observability services
+./start-observability.sh
+
+# Check service health status
+./check-services.sh
+
+# Stop all port forwards
+pkill -f "kubectl port-forward"
+```
+
+### Ingress Access (Domain-based)
+```bash
+# Enable minikube ingress addon
+minikube addons enable ingress
+
+# Start minikube tunnel for ingress access
+minikube tunnel
+
+# Access services via domains (requires /etc/hosts entries)
+# http://grafana.os.com
+# http://prometheus.os.com
+# http://loki.os.com
+# http://blackbox.os.com
 ```

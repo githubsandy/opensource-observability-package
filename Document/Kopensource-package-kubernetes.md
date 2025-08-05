@@ -658,6 +658,185 @@ This lets you access the service using ttp://localhost:<local-port>.
    kubectl port-forward svc/blackbox-exporter 9115:9115 -n kube-observability-stack
    ```
 2. Access Loki at `http://localhost:9115`.
+
+---
+
+### **Step 4.1: Automated Multi Port Forwarding Solution**
+
+Instead of running multiple individual port forwarding commands, you can use automated scripts for easier management of all observability services.
+
+#### **Multi Port Forwarding Script (`start-observability.sh`)**
+
+This script automatically starts port forwarding for all observability services in the background, allowing you to access all services without keeping multiple terminal sessions open.
+
+**Script Content:**
+```bash
+#!/bin/bash
+echo "Starting observability services..."
+echo "Grafana will be available at: http://localhost:3000"
+echo "Prometheus will be available at: http://localhost:9090" 
+echo "Loki will be available at: http://localhost:3100"
+echo "Blackbox Exporter will be available at: http://localhost:9115"
+echo ""
+echo "Press Ctrl+C to stop all services"
+
+# Start all port forwards in background
+kubectl port-forward svc/grafana 3000:3000 -n kube-observability-stack &
+PID1=$!
+
+kubectl port-forward svc/prometheus 9090:9090 -n kube-observability-stack &
+PID2=$!
+
+kubectl port-forward svc/loki 3100:3100 -n kube-observability-stack &
+PID3=$!
+
+kubectl port-forward svc/blackbox-exporter 9115:9115 -n kube-observability-stack &
+PID4=$!
+
+# Wait for interrupt
+trap "kill $PID1 $PID2 $PID3 $PID4; exit" INT
+wait
+```
+
+**Usage:**
+```bash
+# Make script executable
+chmod +x start-observability.sh
+
+# Run the script
+./start-observability.sh
+```
+
+**Key Features:**
+- Starts all services simultaneously in background processes
+- Provides clear URLs for each service
+- Gracefully handles script termination (Ctrl+C kills all port forwards)
+- No need to keep terminal session open - processes run in background
+
+#### **Service Health Check Script (`check-services.sh`)**
+
+This script checks the health status of all observability services and provides quick access links.
+
+**Script Content:**
+```bash
+#!/bin/bash
+echo "🔍 Checking Observability Services Status"
+echo "=========================================="
+echo
+
+# Function to check service
+check_service() {
+    local name=$1
+    local url=$2
+    local response=$(curl -s -o /dev/null -w "%{http_code}" "$url" 2>/dev/null)
+    
+    if [ "$response" = "200" ] || [ "$response" = "302" ] || [ "$response" = "405" ]; then
+        echo "✅ $name: Running (http://localhost:${url##*:})"
+    else
+        echo "❌ $name: Not accessible"
+    fi
+}
+
+# Check each service
+check_service "Grafana        " "http://localhost:3000"
+check_service "Prometheus     " "http://localhost:9090"
+check_service "Loki           " "http://localhost:3100/metrics"
+check_service "Blackbox Export" "http://localhost:9115"
+
+echo
+echo "📋 Default Credentials:"
+echo "   Grafana: admin/admin"
+echo
+echo "🔗 Quick Links:"
+echo "   • Grafana Dashboard: http://localhost:3000"
+echo "   • Prometheus Targets: http://localhost:9090/targets"
+echo "   • Prometheus Graph: http://localhost:9090/graph"
+echo "   • Loki Labels: http://localhost:3100/loki/api/v1/labels"
+echo "   • Blackbox Metrics: http://localhost:9115/metrics"
+```
+
+**Usage:**
+```bash
+# Make script executable
+chmod +x check-services.sh
+
+# Run the health check
+./check-services.sh
+```
+
+**Sample Output:**
+```
+🔍 Checking Observability Services Status
+==========================================
+
+✅ Grafana        : Running (http://localhost:3000)
+✅ Prometheus     : Running (http://localhost:9090)
+✅ Loki           : Running (http://localhost:3100/metrics)
+✅ Blackbox Export: Running (http://localhost:9115)
+
+📋 Default Credentials:
+   Grafana: admin/admin
+
+🔗 Quick Links:
+   • Grafana Dashboard: http://localhost:3000
+   • Prometheus Targets: http://localhost:9090/targets
+   • Prometheus Graph: http://localhost:9090/graph
+   • Loki Labels: http://localhost:3100/loki/api/v1/labels
+   • Blackbox Metrics: http://localhost:9115/metrics
+```
+
+#### **Advantages of Automated Scripts**
+
+| **Aspect** | **Manual Port Forwarding** | **Automated Scripts** |
+|------------|----------------------------|----------------------|
+| **Setup Time** | Multiple commands, multiple terminals | Single command execution |
+| **Management** | Need to track multiple processes | Centralized process management |
+| **Status Checking** | Manual testing of each service | Automated health checks with visual status |
+| **Termination** | Kill processes individually | Graceful shutdown of all services |
+| **User Experience** | Complex, error-prone | Simple, user-friendly |
+| **Documentation** | Need to remember multiple URLs | Built-in quick links and credentials |
+
+#### **Best Practices for Script Usage**
+
+1. **Starting Services:**
+   ```bash
+   # Always check cluster status first
+   minikube status
+   
+   # Start all services
+   ./start-observability.sh
+   ```
+
+2. **Health Monitoring:**
+   ```bash
+   # Run periodic health checks
+   ./check-services.sh
+   
+   # Or run continuously
+   watch -n 30 ./check-services.sh
+   ```
+
+3. **Stopping Services:**
+   ```bash
+   # If using start-observability.sh interactively
+   # Press Ctrl+C to stop all services gracefully
+   
+   # Or kill all port forwards manually
+   pkill -f "kubectl port-forward"
+   ```
+
+4. **Troubleshooting:**
+   ```bash
+   # Check running port forwards
+   ps aux | grep "kubectl port-forward"
+   
+   # Check pod status
+   kubectl get pods -n kube-observability-stack
+   
+   # Run health check
+   ./check-services.sh
+   ```
+
 ---
 
 ### **Step 4: Port forwarding replacement | Permanent solution **
@@ -825,6 +1004,18 @@ kubectl get deployments -n kube-observability-stack
 ### **Check Services**
 ```bash
 kubectl get services -n kube-observability-stack
+```
+
+### **Multi Port Forwarding (Automated)**
+```bash
+# Start all observability services
+./start-observability.sh
+
+# Check service health status
+./check-services.sh
+
+# Kill all port forwards
+pkill -f "kubectl port-forward"
 ```
 
 ---
