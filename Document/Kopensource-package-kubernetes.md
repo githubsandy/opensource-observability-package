@@ -6,8 +6,10 @@ This document provides a step-by-step guide to set up a comprehensive observabil
 **Components Include:**
 - **Core Stack**: Prometheus, Grafana, Loki, Promtail
 - **Infrastructure Exporters**: Node Exporter, Blackbox Exporter  
-- **Foundation Exporters  **: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
-- **Ready for Application Layer (Week 3-4)**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
+- **Foundation Exporters (Week 1-2)**: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
+- **Application Layer (Week 3-4)**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
+
+**Complete 12-Service Enterprise Observability Platform** for modern test automation and Kubernetes monitoring.
 
 ---
 
@@ -57,6 +59,16 @@ helm-kube-observability-stack/
 │   ├── postgres-exporter-deployment.yaml
 │   ├── postgres-exporter-service.yaml
 │   ├── postgres-exporter-secret.yaml
+│   ├── # Application Layer (Week 3-4)
+│   ├── jenkins-exporter-deployment.yaml
+│   ├── jenkins-exporter-service.yaml
+│   ├── jenkins-exporter-secret.yaml
+│   ├── redis-exporter-deployment.yaml
+│   ├── redis-exporter-service.yaml
+│   ├── redis-exporter-secret.yaml
+│   ├── fastapi-metrics-deployment.yaml
+│   ├── fastapi-metrics-service.yaml
+│   ├── fastapi-metrics-config.yaml
 │   ├── # Kubernetes Resources
 │   ├── namespace.yaml
 │   ├── ingress.yaml
@@ -429,6 +441,153 @@ spec:
             cpu: {{ .Values.postgresExporter.resources.requests.cpu }}
             memory: {{ .Values.postgresExporter.resources.requests.memory }}
 ```
+
+### **Application Layer Exporters (Week 3-4)**
+
+#### 10. **jenkins-exporter-deployment.yaml**:
+   - Deploys Jenkins Exporter for CI/CD pipeline monitoring.
+   - Critical for monitoring test automation pipeline health and build success rates.
+   - Tracks build durations, queue sizes, and job success/failure metrics.
+   - Exposes metrics on port `9118`
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-exporter
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.jenkinsExporter.replicas }}
+  selector:
+    matchLabels:
+      app: jenkins-exporter
+  template:
+    metadata:
+      labels:
+        app: jenkins-exporter
+    spec:
+      containers:
+      - name: jenkins-exporter
+        image: {{ .Values.jenkinsExporter.image }}
+        ports:
+        - containerPort: 9118
+          name: http-metrics
+        env:
+        - name: JENKINS_SERVER
+          valueFrom:
+            secretKeyRef:
+              name: jenkins-exporter-secret
+              key: jenkins-server
+        - name: JENKINS_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: jenkins-exporter-secret
+              key: jenkins-username
+        - name: JENKINS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: jenkins-exporter-secret
+              key: jenkins-password
+        resources:
+          limits:
+            cpu: {{ .Values.jenkinsExporter.resources.limits.cpu }}
+            memory: {{ .Values.jenkinsExporter.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.jenkinsExporter.resources.requests.cpu }}
+            memory: {{ .Values.jenkinsExporter.resources.requests.memory }}
+```
+
+#### 11. **redis-exporter-deployment.yaml**:
+   - Deploys Redis Exporter for cache and session monitoring.
+   - Essential for monitoring test session caching and task queue performance.
+   - Tracks Redis connection counts, memory usage, and operations per second.
+   - Exposes metrics on port `9121`
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-exporter
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.redisExporter.replicas }}
+  selector:
+    matchLabels:
+      app: redis-exporter
+  template:
+    metadata:
+      labels:
+        app: redis-exporter
+    spec:
+      containers:
+      - name: redis-exporter
+        image: {{ .Values.redisExporter.image }}
+        ports:
+        - containerPort: 9121
+          name: http-metrics
+        env:
+        - name: REDIS_ADDR
+          valueFrom:
+            secretKeyRef:
+              name: redis-exporter-secret
+              key: redis-addr
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: redis-exporter-secret
+              key: redis-password
+              optional: true
+        resources:
+          limits:
+            cpu: {{ .Values.redisExporter.resources.limits.cpu }}
+            memory: {{ .Values.redisExporter.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.redisExporter.resources.requests.cpu }}
+            memory: {{ .Values.redisExporter.resources.requests.memory }}
+```
+
+#### 12. **fastapi-metrics-deployment.yaml**:
+   - Deploys custom FastAPI application with comprehensive test automation metrics.
+   - Provides business logic monitoring for CXTAF/CXTM frameworks.
+   - Includes sample metrics for test execution, device connections, and workflow management.
+   - Exposes application on port `8000` and metrics on port `8001`
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fastapi-metrics
+  namespace: {{ .Values.namespace }}
+spec:
+  replicas: {{ .Values.fastApiMetrics.replicas }}
+  selector:
+    matchLabels:
+      app: fastapi-metrics
+  template:
+    metadata:
+      labels:
+        app: fastapi-metrics
+    spec:
+      containers:
+      - name: fastapi-metrics
+        image: {{ .Values.fastApiMetrics.image }}
+        ports:
+        - containerPort: 8000
+          name: http-app
+        - containerPort: 8001
+          name: http-metrics
+        env:
+        - name: METRICS_PORT
+          value: "8001"
+        - name: APP_PORT
+          value: "8000"
+        - name: LOG_LEVEL
+          value: {{ .Values.fastApiMetrics.logLevel | quote }}
+        resources:
+          limits:
+            cpu: {{ .Values.fastApiMetrics.resources.limits.cpu }}
+            memory: {{ .Values.fastApiMetrics.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.fastApiMetrics.resources.requests.cpu }}
+            memory: {{ .Values.fastApiMetrics.resources.requests.memory }}
+```
 ---
 
 ### **Service Files**
@@ -606,6 +765,72 @@ spec:
   selector:
     app: postgres-exporter
 ```
+
+### **Application Layer Exporter Services (Week 3-4)**
+
+#### 10. **jenkins-exporter-service.yaml**:
+   - Exposes Jenkins Exporter internally via `ClusterIP`.
+   - Port: `9118`.
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: jenkins-exporter
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.jenkinsExporter.service.type }}
+  ports:
+  - name: http-metrics
+    port: {{ .Values.jenkinsExporter.service.port }}
+    targetPort: 9118
+    protocol: TCP
+  selector:
+    app: jenkins-exporter
+```
+
+#### 11. **redis-exporter-service.yaml**:
+   - Exposes Redis Exporter internally via `ClusterIP`.
+   - Port: `9121`.
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-exporter
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.redisExporter.service.type }}
+  ports:
+  - name: http-metrics
+    port: {{ .Values.redisExporter.service.port }}
+    targetPort: 9121
+    protocol: TCP
+  selector:
+    app: redis-exporter
+```
+
+#### 12. **fastapi-metrics-service.yaml**:
+   - Exposes FastAPI Metrics application and metrics endpoints.
+   - Ports: `8000` (application), `8001` (metrics).
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: fastapi-metrics
+  namespace: {{ .Values.namespace }}
+spec:
+  type: {{ .Values.fastApiMetrics.service.type }}
+  ports:
+  - name: http-app
+    port: {{ .Values.fastApiMetrics.service.appPort }}
+    targetPort: 8000
+    protocol: TCP
+  - name: http-metrics
+    port: {{ .Values.fastApiMetrics.service.metricsPort }}
+    targetPort: 8001
+    protocol: TCP
+  selector:
+    app: fastapi-metrics
+```
 ---
 
 ### **Configuration Files**
@@ -723,6 +948,28 @@ data:
           - source_labels: [__meta_kubernetes_endpoints_name]
             regex: 'node-exporter'
             action: keep
+
+      # Application Layer Exporters (Week 3-4)
+      # Jenkins Exporter scrape job
+      - job_name: 'jenkins-exporter'
+        static_configs:
+          - targets: ['jenkins-exporter:9118']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      # Redis Exporter scrape job  
+      - job_name: 'redis-exporter'
+        static_configs:
+          - targets: ['redis-exporter:9121']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+
+      # FastAPI Metrics scrape job
+      - job_name: 'fastapi-metrics'
+        static_configs:
+          - targets: ['fastapi-metrics:8001']
+        scrape_interval: 15s
+        scrape_timeout: 5s
 ```
 ####  2. **values.yaml**:
    - Centralized configuration for the Helm chart.
@@ -842,6 +1089,56 @@ postgresExporter:
   service:
     type: ClusterIP
     port: 9187
+
+# Application Layer Exporters Configuration (Week 3-4)
+jenkinsExporter:
+  image: lovoo/jenkins_exporter:latest
+  replicas: 1
+  jenkinsServer: "http://your-jenkins-host:8080"  # Change to your Jenkins URL
+  jenkinsUsername: "your-jenkins-username"        # Change to your Jenkins username
+  jenkinsPassword: "your-jenkins-password"        # Change to your Jenkins password/token
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+    port: 9118
+
+redisExporter:
+  image: oliver006/redis_exporter:latest
+  replicas: 1
+  redisAddr: "redis://your-redis-host:6379"       # Change to your Redis address
+  redisPassword: ""                                # Add Redis password if required
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+    port: 9121
+
+fastApiMetrics:
+  image: python:3.11-slim                         # Custom FastAPI app with metrics
+  replicas: 1
+  logLevel: "INFO"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 250m
+      memory: 128Mi
+  service:
+    type: ClusterIP
+    appPort: 8000
+    metricsPort: 8001
 ```
 ---
 
@@ -1011,10 +1308,21 @@ PID8=$!
 kubectl port-forward svc/postgres-exporter 9187:9187 -n kube-observability-stack &
 PID9=$!
 
+# Start Application Layer Exporters
+echo "Starting application layer exporters..."
+kubectl port-forward svc/jenkins-exporter 9118:9118 -n kube-observability-stack &
+PID10=$!
+
+kubectl port-forward svc/redis-exporter 9121:9121 -n kube-observability-stack &
+PID11=$!
+
+kubectl port-forward svc/fastapi-metrics 8001:8001 -n kube-observability-stack &
+PID12=$!
+
 echo "✅ All services started! Use ./check-services.sh to verify status"
 
 # Wait for interrupt
-trap "echo 'Stopping all services...'; kill $PID1 $PID2 $PID3 $PID4 $PID5 $PID6 $PID7 $PID8 $PID9; exit" INT
+trap "echo 'Stopping all services...'; kill $PID1 $PID2 $PID3 $PID4 $PID5 $PID6 $PID7 $PID8 $PID9 $PID10 $PID11 $PID12; exit" INT
 wait
 ```
 
@@ -1070,10 +1378,16 @@ check_service "Node Exporter  " "http://localhost:9100"
 check_service "Promtail       " "http://localhost:9080"
 
 echo
-echo "🔹 Foundation Exporters  :"
+echo "🔹 Foundation Exporters (Week 1-2):"
 check_service "kube-state-metrics" "http://localhost:8080"
 check_service "MongoDB Exporter  " "http://localhost:9216"
 check_service "PostgreSQL Exporter" "http://localhost:9187"
+
+echo
+echo "🔹 Application Layer Exporters (Week 3-4):"
+check_service "Jenkins Exporter  " "http://localhost:9118"
+check_service "Redis Exporter    " "http://localhost:9121"
+check_service "FastAPI Metrics   " "http://localhost:8001"
 
 echo
 echo "📋 Default Credentials:"
@@ -1088,6 +1402,10 @@ echo "   • Blackbox Metrics: http://localhost:9115/metrics"
 echo "   • Kubernetes Metrics: http://localhost:8080/metrics"
 echo "   • Node Metrics: http://localhost:9100/metrics"
 echo "   • Promtail Metrics: http://localhost:9080/metrics"
+echo "   • Jenkins Metrics: http://localhost:9118/metrics"
+echo "   • Redis Metrics: http://localhost:9121/metrics"
+echo "   • FastAPI Metrics: http://localhost:8001/metrics"
+echo "   • FastAPI App: http://localhost:8000"
 ```
 
 **Usage:**
@@ -1293,7 +1611,7 @@ Access Grafana at http://<node-ip>:32000.
 
 
 
-### **Step 5: Configure Foundation Exporters  **
+### **Step 5: Configure Foundation Exporters (Week 1-2)**
 
 Before using the MongoDB and PostgreSQL exporters, configure their database connections in `values.yaml`:
 
@@ -1315,7 +1633,46 @@ postgresExporter:
 helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
 ```
 
-### **Step 6: Query Data in Grafana**
+### **Step 6: Configure Application Layer Exporters (Week 3-4)**
+
+Before using the Application Layer exporters, configure their connections in `values.yaml`:
+
+#### **Jenkins Exporter Configuration**
+```yaml
+jenkinsExporter:
+  jenkinsServer: "http://your-jenkins-host:8080"
+  jenkinsUsername: "your-jenkins-username"  
+  jenkinsPassword: "your-jenkins-password"  # Use API token for security
+```
+
+#### **Redis Exporter Configuration**
+```yaml
+redisExporter:
+  redisAddr: "redis://your-redis-host:6379"
+  redisPassword: ""  # Add Redis password if required
+```
+
+#### **FastAPI Metrics Configuration**
+The FastAPI metrics service provides sample test automation metrics. You can customize the application by modifying the ConfigMap in `fastapi-metrics-config.yaml`. The sample includes:
+
+- **Test execution metrics** (CXTAF/CXTM frameworks)
+- **API performance monitoring**
+- **Device connection tracking** 
+- **Workflow management metrics**
+
+```yaml
+fastApiMetrics:
+  image: python:3.11-slim
+  logLevel: "INFO"
+```
+
+#### **Update and Redeploy**
+```bash
+# Update the configuration
+helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
+```
+
+### **Step 7: Query Data in Grafana**
 
 #### **Logs (Loki)**
 1. Add Loki as a data source in Grafana.
@@ -1337,6 +1694,28 @@ helm upgrade observability-stack ./helm-kube-observability-stack --namespace kub
    - `kube_deployment_status_replicas` - Deployment replica status
    - `kube_node_status_condition` - Node health status
    - `kube_pod_container_status_restarts_total` - Container restart rates
+
+4. **Application Layer Queries (Week 3-4)**:
+   **CI/CD Pipeline Metrics (Jenkins)**:
+   - `jenkins_job_success_percentage` - Build success rates
+   - `jenkins_queue_size` - Build queue backlogs
+   - `jenkins_job_duration_milliseconds` - Pipeline execution times
+   - `jenkins_builds_duration_milliseconds_summary` - Build duration summary
+
+   **Cache & Session Metrics (Redis)**:
+   - `redis_connected_clients` - Active Redis connections
+   - `redis_memory_used_bytes` - Memory usage
+   - `redis_commands_processed_total` - Commands processed per second
+   - `redis_up` - Redis connection status
+
+   **Test Automation Metrics (FastAPI)**:
+   - `test_executions_total{framework="cxtaf"}` - CXTAF test executions
+   - `test_executions_total{framework="cxtm"}` - CXTM test executions
+   - `cxtaf_device_connections_active` - Active device connections
+   - `cxtm_workflows_active` - Active test workflows
+   - `active_test_sessions_total` - Concurrent test capacity
+   - `fastapi_request_duration_seconds` - API response times
+   - `test_execution_duration_seconds` - Test execution duration
 
 ---
 
@@ -1372,12 +1751,20 @@ helm upgrade observability-stack ./helm-kube-observability-stack --namespace kub
 | Promtail      | 9080  | Port-forward / Internal | Log Collection Agent |
 | Blackbox      | 9115  | Port-forward / Internal | External Endpoint Monitoring |
 
-### **Foundation Exporters  **
+### **Foundation Exporters (Week 1-2)**
 | Application   | Port  | Access Method           | Description |
 |---------------|-------|-------------------------|-------------|
 | kube-state-metrics | 8080  | Port-forward / Internal | Kubernetes Cluster Health |
 | MongoDB Exporter   | 9216  | Port-forward / Internal | NoSQL Database Metrics |
 | PostgreSQL Exporter| 9187  | Port-forward / Internal | Relational Database Metrics |
+
+### **Application Layer Exporters (Week 3-4)**
+| Application   | Port  | Access Method           | Description |
+|---------------|-------|-------------------------|-------------|
+| Jenkins Exporter   | 9118  | Port-forward / Internal | CI/CD Pipeline Monitoring |
+| Redis Exporter     | 9121  | Port-forward / Internal | Cache & Session Metrics |
+| FastAPI Metrics    | 8001  | Port-forward / Internal | Test Automation Application Metrics |
+| FastAPI App        | 8000  | Port-forward / Internal | FastAPI Application Interface |
 
 ---
 

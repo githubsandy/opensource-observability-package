@@ -228,6 +228,56 @@ postgresExporter:
     type: ClusterIP
     port: 9187
 
+# Application Layer Exporters Configuration (Week 3-4)
+jenkinsExporter:
+  image: lovoo/jenkins_exporter:latest
+  replicas: 1
+  jenkinsServer: "http://your-jenkins-host:8080"  # Change to your Jenkins URL
+  jenkinsUsername: "your-jenkins-username"        # Change to your Jenkins username
+  jenkinsPassword: "your-jenkins-password"        # Change to your Jenkins password/token
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+    port: 9118
+
+redisExporter:
+  image: oliver006/redis_exporter:latest
+  replicas: 1
+  redisAddr: "redis://your-redis-host:6379"       # Change to your Redis address
+  redisPassword: ""                                # Add Redis password if required
+  resources:
+    limits:
+      cpu: 200m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+    port: 9121
+
+fastApiMetrics:
+  image: python:3.11-slim                         # Custom FastAPI app with metrics
+  replicas: 1
+  logLevel: "INFO"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 256Mi
+    requests:
+      cpu: 250m
+      memory: 128Mi
+  service:
+    type: ClusterIP
+    appPort: 8000
+    metricsPort: 8001
+
 ingress:
   enabled: true
   className: "nginx"  # Change to your ingress class (nginx, traefik, etc.)

@@ -17,6 +17,11 @@ echo "   • kube-state-metrics: http://localhost:8080"
 echo "   • MongoDB Exporter: http://localhost:9216"
 echo "   • PostgreSQL Exporter: http://localhost:9187"
 echo
+echo "🚀 Application Layer Exporters (Week 3-4):"
+echo "   • Jenkins Exporter: http://localhost:9118"
+echo "   • Redis Exporter: http://localhost:9121"
+echo "   • FastAPI Metrics: http://localhost:8001"
+echo
 echo "Press Ctrl+C to stop all services"
 echo "=============================================="
 
@@ -53,8 +58,19 @@ PID8=$!
 kubectl port-forward svc/postgres-exporter 9187:9187 -n kube-observability-stack &
 PID9=$!
 
+# Start Application Layer Exporters
+echo "Starting application layer exporters..."
+kubectl port-forward svc/jenkins-exporter 9118:9118 -n kube-observability-stack &
+PID10=$!
+
+kubectl port-forward svc/redis-exporter 9121:9121 -n kube-observability-stack &
+PID11=$!
+
+kubectl port-forward svc/fastapi-metrics 8001:8001 -n kube-observability-stack &
+PID12=$!
+
 echo "✅ All services started! Use ./check-services.sh to verify status"
 
 # Wait for interrupt
-trap "echo 'Stopping all services...'; kill $PID1 $PID2 $PID3 $PID4 $PID5 $PID6 $PID7 $PID8 $PID9; exit" INT
+trap "echo 'Stopping all services...'; kill $PID1 $PID2 $PID3 $PID4 $PID5 $PID6 $PID7 $PID8 $PID9 $PID10 $PID11 $PID12; exit" INT
 wait

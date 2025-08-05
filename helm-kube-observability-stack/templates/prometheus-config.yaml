@@ -62,3 +62,27 @@ data:
           - source_labels: [__meta_kubernetes_endpoints_name]
             regex: 'node-exporter'
             action: keep
+
+      # Application Layer Exporters (Week 3-4)
+      
+      # Jenkins Exporter scrape job
+      - job_name: 'jenkins-exporter'
+        static_configs:
+          - targets: ['jenkins-exporter:9118']
+        scrape_interval: 60s
+        scrape_timeout: 30s
+        
+      # Redis Exporter scrape job  
+      - job_name: 'redis-exporter'
+        static_configs:
+          - targets: ['redis-exporter:9121']
+        scrape_interval: 30s
+        scrape_timeout: 10s
+        
+      # FastAPI Custom Metrics scrape job
+      - job_name: 'fastapi-metrics'
+        static_configs:
+          - targets: ['fastapi-metrics:8001']
+        scrape_interval: 15s
+        scrape_timeout: 10s
+        metrics_path: /metrics

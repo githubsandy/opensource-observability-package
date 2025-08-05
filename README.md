@@ -6,7 +6,9 @@ This repository provides a step-by-step guide to set up a comprehensive observab
 - **🎯 Core Stack**: Prometheus, Grafana, Loki, Promtail
 - **🔧 Infrastructure Exporters**: Node Exporter, Blackbox Exporter  
 - **⚡ Foundation Exporters (Week 1-2)**: kube-state-metrics, MongoDB Exporter, PostgreSQL Exporter
-- **🚀 Ready for Application Layer (Week 3-4)**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
+- **🚀 Application Layer (Week 3-4)**: Custom FastAPI metrics, Jenkins Exporter, Redis Exporter
+
+**Complete 12-Service Observability Platform** for modern test automation and Kubernetes monitoring.
 
 ---
 
@@ -57,6 +59,11 @@ chmod +x check-services.sh
 - **MongoDB Exporter**: http://localhost:9216
 - **PostgreSQL Exporter**: http://localhost:9187
 
+**🚀 Application Layer (Week 3-4):**
+- **Jenkins Exporter**: http://localhost:9118
+- **Redis Exporter**: http://localhost:9121
+- **FastAPI Metrics**: http://localhost:8001
+
 ---
 
 ## Directory Structure
@@ -94,6 +101,16 @@ opensource-observability-package/
 │   │   ├── postgres-exporter-deployment.yaml
 │   │   ├── postgres-exporter-service.yaml
 │   │   ├── postgres-exporter-secret.yaml
+│   │   ├── # Application Layer (Week 3-4)
+│   │   ├── jenkins-exporter-deployment.yaml
+│   │   ├── jenkins-exporter-service.yaml
+│   │   ├── jenkins-exporter-secret.yaml
+│   │   ├── redis-exporter-deployment.yaml
+│   │   ├── redis-exporter-service.yaml
+│   │   ├── redis-exporter-secret.yaml
+│   │   ├── fastapi-metrics-deployment.yaml
+│   │   ├── fastapi-metrics-service.yaml
+│   │   ├── fastapi-metrics-config.yaml
 │   │   ├── # Kubernetes Resources
 │   │   ├── namespace.yaml
 │   │   ├── ingress.yaml
@@ -229,6 +246,26 @@ Access MongoDB Exporter at `http://localhost:9216`.
 kubectl port-forward svc/postgres-exporter 9187:9187 -n kube-observability-stack
 ```
 Access PostgreSQL Exporter at `http://localhost:9187`.
+
+### Application Layer (Week 3-4)
+
+#### Jenkins Exporter
+```bash
+kubectl port-forward svc/jenkins-exporter 9118:9118 -n kube-observability-stack
+```
+Access Jenkins Exporter at `http://localhost:9118`.
+
+#### Redis Exporter
+```bash
+kubectl port-forward svc/redis-exporter 9121:9121 -n kube-observability-stack
+```
+Access Redis Exporter at `http://localhost:9121`.
+
+#### FastAPI Metrics
+```bash
+kubectl port-forward svc/fastapi-metrics 8001:8001 -n kube-observability-stack
+```
+Access FastAPI Metrics at `http://localhost:8001`.
 ---
 
 ### Step 5: Access the Services
@@ -255,6 +292,13 @@ MongoDB Exporter: http://localhost:9216
 PostgreSQL Exporter: http://localhost:9187
 ```
 
+**🚀 Application Layer (Week 3-4):**
+```bash
+Jenkins Exporter: http://localhost:9118
+Redis Exporter: http://localhost:9121
+FastAPI Metrics: http://localhost:8001
+```
+
 ---
 
 ## Foundation Exporters Configuration (Week 1-2)
@@ -277,6 +321,43 @@ postgresExporter:
 
 ### Update Deployment
 After updating the configuration, redeploy the stack:
+```bash
+helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
+```
+
+---
+
+## Application Layer Configuration (Week 3-4)
+
+### Jenkins Exporter Setup
+Before using the Jenkins Exporter, configure your Jenkins server connection in `values.yaml`:
+
+```yaml
+jenkinsExporter:
+  jenkinsServer: "http://your-jenkins-host:8080"
+  jenkinsUsername: "your-jenkins-username"  
+  jenkinsPassword: "your-jenkins-password"  # Use API token for security
+```
+
+### Redis Exporter Setup
+Before using the Redis Exporter, configure your Redis connection in `values.yaml`:
+
+```yaml
+redisExporter:
+  redisAddr: "redis://your-redis-host:6379"
+  redisPassword: "your-redis-password"     # Leave empty if no password
+```
+
+### FastAPI Custom Metrics Setup
+The FastAPI metrics service provides sample test automation metrics. You can customize the application by modifying the ConfigMap in `fastapi-metrics-config.yaml`. The sample includes:
+
+- **Test execution metrics** (CXTAF/CXTM frameworks)
+- **API performance monitoring**
+- **Device connection tracking**
+- **Workflow management metrics**
+
+### Update Deployment
+After updating any configuration, redeploy the complete stack:
 ```bash
 helm upgrade observability-stack ./helm-kube-observability-stack --namespace kube-observability-stack
 ```
@@ -347,6 +428,35 @@ mongodb_connections                      # MongoDB active connections
 postgres_connections                     # PostgreSQL connections
 ```
 
+### Application Layer (Week 3-4)
+
+#### CI/CD Pipeline Metrics (Jenkins)
+```promql
+jenkins_job_success_percentage           # Build success rates
+jenkins_queue_size                      # Build queue backlogs
+jenkins_job_duration_milliseconds       # Pipeline execution times
+jenkins_builds_duration_milliseconds_summary # Build duration summary
+```
+
+#### Cache & Session Metrics (Redis)
+```promql
+redis_connected_clients                 # Active Redis connections
+redis_memory_used_bytes                # Memory usage
+redis_commands_processed_total          # Commands processed per second
+redis_up                               # Redis connection status
+```
+
+#### Test Automation Metrics (FastAPI)
+```promql
+test_executions_total{framework="cxtaf"} # CXTAF test executions
+test_executions_total{framework="cxtm"}  # CXTM test executions
+cxtaf_device_connections_active         # Active device connections
+cxtm_workflows_active                   # Active test workflows
+active_test_sessions_total              # Concurrent test capacity
+fastapi_request_duration_seconds        # API response times
+test_execution_duration_seconds         # Test execution duration
+```
+
 ## Enhanced Service Health Monitoring
 
 The `check-services.sh` script now provides comprehensive status monitoring for all components:
@@ -370,6 +480,11 @@ The `check-services.sh` script now provides comprehensive status monitoring for 
 ✅ MongoDB Exporter  : Running (http://localhost:9216)
 ✅ PostgreSQL Exporter: Running (http://localhost:9187)
 
+🔹 Application Layer Exporters (Week 3-4):
+✅ Jenkins Exporter  : Running (http://localhost:9118)
+✅ Redis Exporter    : Running (http://localhost:9121)
+✅ FastAPI Metrics   : Running (http://localhost:8001)
+
 📋 Default Credentials:
    Grafana: admin/admin
 
@@ -378,6 +493,10 @@ The `check-services.sh` script now provides comprehensive status monitoring for 
    • Prometheus Targets: http://localhost:9090/targets
    • Kubernetes Metrics: http://localhost:8080/metrics
    • Node Metrics: http://localhost:9100/metrics
+   • Jenkins Metrics: http://localhost:9118/metrics
+   • Redis Metrics: http://localhost:9121/metrics
+   • FastAPI Metrics: http://localhost:8001/metrics
+   • FastAPI App: http://localhost:8000
 ```
 
 ---
@@ -449,6 +568,13 @@ spec:
 | MongoDB Exporter   | 9216  | Port-forward / Internal | NoSQL Database Metrics |
 | PostgreSQL Exporter| 9187  | Port-forward / Internal | Relational Database Metrics |
 
+### Application Layer (Week 3-4)
+| Application   | Port  | Access Method           | Description |
+|---------------|-------|-------------------------|-------------|
+| Jenkins Exporter   | 9118  | Port-forward / Internal | CI/CD Pipeline Monitoring |
+| Redis Exporter     | 9121  | Port-forward / Internal | Cache & Session Metrics |
+| FastAPI Metrics    | 8001  | Port-forward / Internal | Test Automation Application Metrics |
+
 ---
 
 ## Why Helm Chart?
@@ -514,4 +640,8 @@ minikube tunnel
 # http://kube-state-metrics.os.com
 # http://mongodb-exporter.os.com
 # http://postgres-exporter.os.com
+# Application Layer Exporters
+# http://jenkins-exporter.os.com
+# http://redis-exporter.os.com
+# http://fastapi-metrics.os.com
 ```
